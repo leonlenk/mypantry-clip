@@ -1,0 +1,31 @@
+{
+    "manifest_version": 3,
+    "name": "Recipe AI",
+    "version": "0.1.0",
+    "description": "Privacy-first browser extension for extracting and searching recipes.",
+    "action": {
+        "default_title": "Recipe AI",
+        "default_icon": {
+            "16": "icon-16.png",
+            "48": "icon-48.png",
+            "128": "icon-128.png"
+        }
+    },
+    "icons": {
+        "16": "icon-16.png",
+        "48": "icon-48.png",
+        "128": "icon-128.png"
+    },
+    "background": {
+        "service_worker": "background.js",
+        "scripts": [
+            "background.js"
+        ]
+    },
+    "options_page": "setup.html",
+    "permissions": [
+        "activeTab",
+        "scripting",
+        "storage"
+    ]
+}

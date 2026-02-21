@@ -1,0 +1,459 @@
+---
+import "../styles/global.scss";
+---
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Recipe AI - Pantry Dashboard</title>
+  </head>
+  <body>
+    <div class="pantry-layout">
+      <aside class="sidebar card">
+        <h2>Your Pantry</h2>
+        <nav>
+          <ul>
+            <li><a href="#" class="active">All Recipes</a></li>
+            <li><a href="#">Recent Additions</a></li>
+            <li><a href="#">Favorites</a></li>
+            <li><a href="#">Settings</a></li>
+          </ul>
+        </nav>
+      </aside>
+
+      <main class="content">
+        <header class="top-bar">
+          <div class="search-wrap">
+            <input
+              type="text"
+              id="semantic-search"
+              placeholder="Semantic search: e.g. 'A spicy high-protein dinner'"
+            />
+            <button class="primary" id="search-btn">Search</button>
+          </div>
+          <button class="auth-btn btn outline" id="unlock-btn"
+            >Unlock Keys</button
+          >
+        </header>
+
+        <section class="recipe-grid" id="recipe-grid">
+          <!-- Recipes injected here via JS -->
+        </section>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="empty-state hidden">
+          <div class="empty-icon">🍳</div>
+          <h3>Your pantry is empty</h3>
+          <p>
+            Extract recipes from the web using the Recipe AI extension panel.
+          </p>
+        </div>
+      </main>
+    </div>
+
+    <style lang="scss">
+      body {
+        margin: 0;
+        height: 100vh;
+        overflow: hidden;
+      }
+
+      .hidden {
+        display: none !important;
+      }
+
+      .pantry-layout {
+        display: flex;
+        height: 100%;
+        width: 100%;
+        background-color: var(--color-bg);
+      }
+
+      .sidebar {
+        width: 250px;
+        border-radius: 0;
+        border-top: none;
+        border-bottom: none;
+        border-left: none;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        background: linear-gradient(
+          180deg,
+          var(--color-surface) 0%,
+          rgba(255, 255, 255, 0.02) 100%
+        );
+        backdrop-filter: blur(10px);
+
+        h2 {
+          font-size: 1.5rem;
+          margin-bottom: var(--spacing-lg);
+          padding: 0 var(--spacing-sm);
+          color: var(--color-text);
+        }
+
+        nav ul {
+          list-style: none;
+
+          li {
+            margin-bottom: var(--spacing-xs);
+          }
+
+          a {
+            display: flex;
+            align-items: center;
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: var(--radius-sm);
+            color: var(--color-text-muted);
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+
+            &:hover {
+              background-color: rgba(0, 0, 0, 0.03);
+              color: var(--color-text);
+              transform: translateX(4px);
+            }
+
+            &.active {
+              background-color: var(--color-bg);
+              color: var(--color-text);
+              font-weight: 600;
+
+              &::before {
+                content: "";
+                position: absolute;
+                left: -var(--spacing-md);
+                top: 50%;
+                transform: translateY(-50%);
+                height: 60%;
+                width: 4px;
+                background-color: var(--color-accent);
+                border-radius: 0 4px 4px 0;
+              }
+            }
+          }
+        }
+      }
+
+      .content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        padding: var(--spacing-xl);
+        overflow-y: auto;
+        background-image: radial-gradient(
+          circle at top right,
+          rgba(139, 115, 85, 0.03) 0%,
+          transparent 40%
+        );
+      }
+
+      .top-bar {
+        display: flex;
+        gap: var(--spacing-md);
+        justify-content: space-between;
+        margin-bottom: var(--spacing-xl);
+        align-items: center;
+
+        .search-wrap {
+          display: flex;
+          flex: 1;
+          gap: var(--spacing-sm);
+          max-width: 600px;
+          position: relative;
+
+          input {
+            flex: 1;
+            padding-left: 2.5rem;
+            border-radius: 20px;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
+            font-size: 1rem;
+
+            &::placeholder {
+              color: var(--color-text-muted);
+              opacity: 0.6;
+            }
+          }
+
+          &::before {
+            content: "🔍";
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.1rem;
+            opacity: 0.5;
+            pointer-events: none;
+          }
+
+          button {
+            border-radius: 20px;
+            padding: 0.5rem 1.5rem;
+          }
+        }
+      }
+
+      .recipe-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: var(--spacing-xl);
+        align-content: start;
+      }
+
+      .recipe-card {
+        display: flex;
+        flex-direction: column;
+        padding: var(--spacing-xl);
+        background: linear-gradient(
+          145deg,
+          var(--color-surface) 0%,
+          var(--color-bg) 100%
+        );
+        border: 1px solid rgba(0, 0, 0, 0.03);
+        box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05);
+        opacity: 0;
+        animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        position: relative;
+        overflow: hidden;
+
+        &::after {
+          content: "";
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 3px;
+          background: var(--color-accent);
+          transform: scaleX(0);
+          transform-origin: left;
+          transition: transform 0.4s ease;
+        }
+
+        &:hover {
+          transform: translateY(-6px) scale(1.01);
+          box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.08);
+          border-color: rgba(139, 115, 85, 0.1);
+
+          &::after {
+            transform: scaleX(1);
+          }
+
+          .view-btn {
+            color: var(--color-accent-hover);
+            transform: translateX(4px);
+          }
+        }
+
+        h3 {
+          margin-bottom: var(--spacing-sm);
+          font-size: 1.4rem;
+          letter-spacing: -0.02em;
+        }
+
+        p {
+          font-size: 0.95rem;
+          flex: 1;
+          line-height: 1.6;
+          color: var(--color-text-muted);
+        }
+
+        .tags {
+          display: flex;
+          flex-wrap: wrap;
+          gap: var(--spacing-xs);
+          margin-bottom: var(--spacing-lg);
+          margin-top: var(--spacing-md);
+
+          .tag {
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            background-color: rgba(139, 115, 85, 0.08);
+            border: 1px solid rgba(139, 115, 85, 0.15);
+            padding: 4px 10px;
+            border-radius: 20px;
+            color: var(--color-accent);
+          }
+        }
+
+        .view-btn {
+          font-weight: 600;
+          font-size: 0.9rem;
+          display: inline-flex;
+          align-items: center;
+          transition: all 0.3s ease;
+          text-decoration: none;
+        }
+      }
+
+      .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 60%;
+        text-align: center;
+        opacity: 0;
+        animation: fadeIn 0.8s ease forwards;
+
+        .empty-icon {
+          font-size: 4rem;
+          margin-bottom: var(--spacing-md);
+          opacity: 0.8;
+          filter: grayscale(0.5);
+        }
+
+        h3 {
+          font-size: 1.8rem;
+          margin-bottom: var(--spacing-sm);
+          color: var(--color-text);
+        }
+
+        p {
+          max-width: 400px;
+          color: var(--color-text-muted);
+          font-size: 1.1rem;
+        }
+      }
+
+      @keyframes fadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+    </style>
+  </body>
+
+  <script>
+    declare const chrome: any;
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      if (
+        typeof chrome !== "undefined" &&
+        chrome.storage &&
+        chrome.storage.local
+      ) {
+        const { setupComplete } = await chrome.storage.local.get([
+          "setupComplete",
+        ]);
+        if (!setupComplete) {
+          window.location.href = "setup.html";
+          return;
+        }
+      }
+
+      const grid = document.getElementById("recipe-grid");
+      const emptyState = document.getElementById("empty-state");
+      const searchInput = document.getElementById("semantic-search");
+
+      // Mock data logic scaffold
+      const loadRecipes = async () => {
+        let recipes: any[] = [];
+
+        if (
+          typeof chrome !== "undefined" &&
+          chrome.storage &&
+          chrome.storage.local
+        ) {
+          // Extension context
+          const result = await chrome.storage.local.get(["recipes"]);
+          recipes = result.recipes || [];
+        }
+
+        // Local dev fallback (Mock Data) if none found in storage
+        if (!recipes || recipes.length === 0) {
+          recipes = [
+            {
+              title: "Spicy Dal Tarka",
+              description:
+                "A comforting red lentil dish with aromatic spices, perfect for a cold evening.",
+              tags: ["High-Protein", "Dinner", "Indian"],
+            },
+            {
+              title: "Matcha Basque Cheesecake",
+              description:
+                "Creamy, burnt-top cheesecake infused with green tea and a hint of vanilla.",
+              tags: ["Dessert", "Baking", "Japanese"],
+            },
+            {
+              title: "Garlic Butter Steak Bites",
+              description:
+                "Tender sirloin steak chunks seared to perfection with roasted garlic.",
+              tags: ["Keto", "Quick", "Dinner"],
+            },
+          ];
+          // Uncomment the line below to test the empty state:
+          // recipes = [];
+        }
+
+        renderRecipes(recipes);
+      };
+
+      const renderRecipes = (recipes: any[]) => {
+        if (!grid || !emptyState) return;
+        grid.innerHTML = ""; // Clear
+
+        if (recipes.length === 0) {
+          grid.classList.add("hidden");
+          emptyState.classList.remove("hidden");
+          return;
+        }
+
+        grid.classList.remove("hidden");
+        emptyState.classList.add("hidden");
+
+        recipes.forEach((recipe: any, index: number) => {
+          const card = document.createElement("div");
+          card.className = "card recipe-card";
+          card.style.animationDelay = `${index * 0.05}s`;
+
+          const tagsHtml = recipe.tags
+            ? recipe.tags
+                .map((tag: string) => `<span class="tag">${tag}</span>`)
+                .join("")
+            : "";
+
+          card.innerHTML = `
+            <h3>${recipe.title}</h3>
+            <p>${recipe.description}</p>
+            <div class="tags">
+              ${tagsHtml}
+            </div>
+            <a href="#" class="view-btn">View Recipe &rarr;</a>
+          `;
+          grid.appendChild(card);
+        });
+      };
+
+      // Initialize display
+      loadRecipes();
+
+      // Search logic scaffolding
+      if (searchInput) {
+        searchInput.addEventListener("input", (e: Event) => {
+          // In actual implementation, hook to local Orama or Remote Vector DB
+          const target = e.target as HTMLInputElement;
+          console.log("Searching for:", target.value);
+        });
+      }
+    });
+  </script>
+</html>

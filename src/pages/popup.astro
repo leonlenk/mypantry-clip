@@ -1,0 +1,131 @@
+---
+import "../styles/global.scss";
+---
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Recipe AI - Action Panel</title>
+  </head>
+  <body>
+    <main class="popup-container">
+      <header>
+        <h1>Recipe AI</h1>
+        <p>Your intelligent culinary assistant</p>
+      </header>
+
+      <section class="action-card card">
+        <h3>Current Page</h3>
+        <p>Found a recipe on this page?</p>
+        <button class="primary" id="extract-btn">Extract & Add to Pantry</button
+        >
+        <button class="btn mt" id="open-pantry-btn" style="width: 100%;"
+          >Open My Pantry</button
+        >
+      </section>
+
+      <section class="chat-interface card mt">
+        <h3>Substitution Agent</h3>
+        <div class="chat-history" id="chat-history">
+          <p class="placeholder-text">
+            Ask me for substitutions or dietary modifications...
+          </p>
+        </div>
+        <div class="chat-input-wrapper">
+          <input
+            type="text"
+            id="chat-input"
+            placeholder="e.g. Can I use yogurt instead of sour cream?"
+          />
+          <button id="send-btn">Send</button>
+        </div>
+      </section>
+    </main>
+
+    <script is:inline>
+      document
+        .getElementById("open-pantry-btn")
+        ?.addEventListener("click", () => {
+          if (typeof chrome !== "undefined" && chrome.tabs) {
+            chrome.tabs.create({ url: chrome.runtime.getURL("pantry.html") });
+          } else {
+            window.open("/pantry", "_blank");
+          }
+        });
+    </script>
+
+    <style lang="scss">
+      body {
+        width: 350px;
+        min-height: 480px;
+        padding: var(--spacing-md);
+        margin: 0;
+        background-color: var(--color-bg);
+      } // Restrict size for extension popup
+
+      .popup-container {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-md);
+      }
+
+      header {
+        text-align: center;
+        margin-bottom: var(--spacing-sm);
+
+        h1 {
+          font-size: 1.8rem;
+          margin-bottom: var(--spacing-xs);
+        }
+
+        p {
+          font-size: 0.9rem;
+          margin-bottom: 0;
+        }
+      }
+
+      .mt {
+        margin-top: var(--spacing-sm);
+      }
+
+      .action-card {
+        text-align: center;
+
+        button {
+          width: 100%;
+          margin-top: var(--spacing-sm);
+        }
+      }
+
+      .chat-interface {
+        display: flex;
+        flex-direction: column;
+        height: 220px;
+
+        .chat-history {
+          flex: 1;
+          overflow-y: auto;
+          margin-bottom: var(--spacing-sm);
+          padding-bottom: var(--spacing-md);
+
+          .placeholder-text {
+            font-size: 0.85rem;
+            text-align: center;
+            font-style: italic;
+          }
+        }
+
+        .chat-input-wrapper {
+          display: flex;
+          gap: var(--spacing-xs);
+
+          input {
+            flex: 1;
+          }
+        }
+      }
+    </style>
+  </body>
+</html>

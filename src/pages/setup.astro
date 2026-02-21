@@ -1,0 +1,121 @@
+---
+import "../styles/global.scss";
+---
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Recipe AI - Onboarding Setup</title>
+  </head>
+  <body>
+    <main class="setup-container">
+      <div class="card setup-card">
+        <header>
+          <h1>Welcome to Recipe AI</h1>
+          <p>Let's complete a quick privacy-first onboarding</p>
+        </header>
+
+        <section class="step">
+          <h3>1. Vector Database</h3>
+          <p>Choose where to store your recipe embeddings.</p>
+          <select id="db-select">
+            <option value="local">Local (Orama + Transformers.js)</option>
+            <option value="cloud">Cloud API</option>
+          </select>
+        </section>
+
+        <section class="step mt">
+          <h3>2. API Key Encryption</h3>
+          <p>
+            We need an encryption password to secure your credentials locally.
+            Your keys never leave your device.
+          </p>
+          <input
+            type="password"
+            id="encryption-password"
+            placeholder="Create a master password"
+          />
+          <input
+            type="password"
+            id="api-key"
+            placeholder="Enter your LLM API Key"
+            class="mt"
+          />
+        </section>
+
+        <div class="actions mt">
+          <button class="primary" id="finish-setup-btn">Complete Setup</button>
+        </div>
+      </div>
+    </main>
+
+    <style lang="scss">
+      .setup-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        background-color: var(--color-bg);
+        padding: var(--spacing-lg);
+      }
+
+      .setup-card {
+        max-width: 500px;
+        width: 100%;
+      }
+
+      header {
+        text-align: center;
+        margin-bottom: var(--spacing-xl);
+      }
+
+      .step {
+        margin-bottom: var(--spacing-lg);
+      }
+
+      .mt {
+        margin-top: var(--spacing-sm);
+      }
+
+      .actions {
+        display: flex;
+        justify-content: flex-end;
+
+        button {
+          width: 100%;
+        }
+      }
+    </style>
+
+    <script is:inline>
+      const finishBtn = document.getElementById("finish-setup-btn");
+      finishBtn?.addEventListener("click", async () => {
+        const dbSelect = document.getElementById("db-select").value;
+        const password = document.getElementById("encryption-password").value;
+        const apiKey = document.getElementById("api-key").value;
+
+        if (!password || (!apiKey && dbSelect === "cloud")) {
+          alert("Please fill in the required fields to continue.");
+          return;
+        }
+
+        if (
+          typeof chrome !== "undefined" &&
+          chrome.storage &&
+          chrome.storage.local
+        ) {
+          await chrome.storage.local.set({ setupComplete: true, dbSelect });
+          if (chrome.action) {
+            chrome.action.setPopup({ popup: "popup.html" });
+          }
+          window.location.href = "pantry.html";
+        } else {
+          alert("Setup Complete (Mock Dev Environment)!");
+          window.location.href = "pantry.html";
+        }
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,22 @@
+{
+  "name": "recipe-ai",
+  "type": "module",
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro",
+    "build:watch": "astro build --watch",
+    "test": "web-ext run -s dist",
+    "test:firefox": "web-ext run -t firefox-desktop -s dist",
+    "test:chromium": "web-ext run -t chromium -s dist"
+  },
+  "dependencies": {
+    "astro": "^5.17.1"
+  },
+  "devDependencies": {
+    "sass": "^1.97.3",
+    "web-ext": "^9.3.0"
+  }
+}
