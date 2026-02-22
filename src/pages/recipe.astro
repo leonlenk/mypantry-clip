@@ -94,7 +94,11 @@ import "../styles/recipe.scss";
 
         <script>
             import { getRecipe } from "../utils/db";
-            import { convertVolumeToWeight } from "../utils/conversions";
+            import {
+                convertVolumeToWeight,
+                formatUSVolume,
+                decimalToFraction,
+            } from "../utils/conversions";
 
             let currentRecipe: any = null;
             let originalBatchSize = 1;
@@ -278,7 +282,7 @@ import "../styles/recipe.scss";
                     if (ing.quantity !== null && ing.quantity !== undefined) {
                         const scaled = ing.quantity * multiplier;
 
-                        let displayQuantity = scaled;
+                        let displayQuantity: number | string = scaled;
                         let displayUnit = ing.unit;
 
                         if (currentUnitSystem === "metric" && displayUnit) {
@@ -291,12 +295,22 @@ import "../styles/recipe.scss";
                                 displayQuantity = conversion.quantity;
                                 displayUnit = conversion.unit;
                             }
+                            displayQuantity = formatQuantity(
+                                displayQuantity as number
+                            );
+                        } else if (currentUnitSystem === "us") {
+                            const formattedUS = formatUSVolume(
+                                scaled,
+                                displayUnit
+                            );
+                            displayQuantity = formattedUS.displayQuantity;
+                            displayUnit = formattedUS.displayUnit;
+                        } else {
+                            // Fallback
+                            displayQuantity = formatQuantity(scaled);
                         }
 
-                        const formattedQuantity =
-                            formatQuantity(displayQuantity);
-
-                        let text = `${formattedQuantity}`;
+                        let text = `${displayQuantity}`;
                         if (displayUnit) text += ` ${displayUnit}`;
                         if (ing.item) text += ` ${ing.item}`;
                         if (ing.preparation) text += `, ${ing.preparation}`;

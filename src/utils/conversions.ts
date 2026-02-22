@@ -144,3 +144,99 @@ export function convertVolumeToWeight(item: string, quantity: number, unit: stri
 
     return null; // Could not map ingredient to a known density
 }
+
+/**
+ * Converts a decimal number to a common fraction string (e.g. 3.5 -> "3 1/2").
+ */
+export function decimalToFraction(q: number): string {
+    const whole = Math.floor(q);
+    const fraction = q - whole;
+
+    if (fraction < 0.05) return whole > 0 ? whole.toString() : "0";
+
+    const fractions = [
+        { val: 1 / 8, text: "1/8" },
+        { val: 1 / 4, text: "1/4" },
+        { val: 1 / 3, text: "1/3" },
+        { val: 3 / 8, text: "3/8" },
+        { val: 1 / 2, text: "1/2" },
+        { val: 5 / 8, text: "5/8" },
+        { val: 2 / 3, text: "2/3" },
+        { val: 3 / 4, text: "3/4" },
+        { val: 7 / 8, text: "7/8" }
+    ];
+
+    let closest = fractions[0];
+    let minDiff = Math.abs(fraction - fractions[0].val);
+
+    for (let i = 1; i < fractions.length; i++) {
+        const diff = Math.abs(fraction - fractions[i].val);
+        if (diff < minDiff) {
+            minDiff = diff;
+            closest = fractions[i];
+        }
+    }
+
+    if (Math.abs(1 - fraction) < minDiff) {
+        return (whole + 1).toString();
+    }
+
+    if (fraction < minDiff) {
+        return whole > 0 ? whole.toString() : "0";
+    }
+
+    if (whole > 0) {
+        return `${whole} ${closest.text}`;
+    }
+
+    return closest.text;
+}
+
+/**
+ * Normalizes US Volume units to practical sizes (cups, tbsp, tsp)
+ * and formats the quantity as a fraction.
+ */
+export function formatUSVolume(quantity: number, unitStr: string | null): { displayQuantity: string, displayUnit: string | null } {
+    if (!unitStr || quantity <= 0) {
+        return { displayQuantity: decimalToFraction(quantity), displayUnit: unitStr };
+    }
+
+    const normalizedUnit = unitStr.toLowerCase().trim();
+    const cupRatio = VOLUME_UNITS[normalizedUnit];
+
+    if (cupRatio === undefined) {
+        return { displayQuantity: decimalToFraction(quantity), displayUnit: unitStr };
+    }
+
+    // Convert everything to teaspoons first to find the best unit
+    let totalTeaspoons = quantity * cupRatio * 48; // since 1 cup = 48 tsp
+    const cups = totalTeaspoons / 48;
+
+    // For cups, we usually use fractions down to 1/4 (or 1/3)
+    if (cups >= 0.23) {
+        // Just checking if value is plural
+        // But 0.75 cups is still "cups", 1 cup is "cup", 1.5 is "cups"
+        const isSingular = Math.abs(cups - 1) < 0.05;
+        return {
+            displayQuantity: decimalToFraction(cups),
+            displayUnit: isSingular ? "cup" : "cups"
+        };
+    }
+
+    // If less than 1/4 cup, check tablespoons
+    const tbls = totalTeaspoons / 3;
+    if (tbls >= 0.9) {
+        const isSingular = Math.abs(tbls - 1) < 0.05;
+        return {
+            displayQuantity: decimalToFraction(tbls),
+            displayUnit: isSingular ? "tbsp" : "tbsp"
+        };
+    }
+
+    // Otherwise teaspoons
+    const isSingular = Math.abs(totalTeaspoons - 1) < 0.05;
+    return {
+        displayQuantity: decimalToFraction(totalTeaspoons),
+        displayUnit: isSingular ? "tsp" : "tsp"
+    };
+}

@@ -285,6 +285,42 @@ import SetupView from "../components/popup/SetupView.astro";
         } catch (e) {
           console.warn("Could not check extraction status", e);
         }
+
+        // Also check if the URL is already saved
+        try {
+          if (
+            typeof chrome !== "undefined" &&
+            chrome.tabs &&
+            chrome.storage &&
+            chrome.storage.local
+          ) {
+            const [tab] = await chrome.tabs.query({
+              active: true,
+              currentWindow: true,
+            });
+            if (tab && tab.url) {
+              const data = await chrome.storage.local.get("savedUrls");
+              const urls: string[] = Array.isArray(data.savedUrls)
+                ? data.savedUrls
+                : [];
+              // Standardize URL check by stripping trailing slash
+              const normTabUrl = tab.url.replace(/\/$/, "");
+
+              if (urls.some((u) => u.replace(/\/$/, "") === normTabUrl)) {
+                if (extractBtn) {
+                  extractBtn.textContent = "✓ Already Saved inside Pantry";
+                  extractBtn.classList.remove("primary");
+                  extractBtn.classList.add("outline");
+                  // We can technically leave it clickable to just run again or we can disable it
+                  // Let's just disable it and let them use the Open Pantry button
+                  (extractBtn as HTMLButtonElement).disabled = true;
+                }
+              }
+            }
+          }
+        } catch (e) {
+          console.warn("Could not check saved status", e);
+        }
       });
 
       async function executeExtraction(

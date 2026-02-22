@@ -29,9 +29,13 @@ function openDb(): Promise<IDBDatabase> {
  * Persists a recipe object (with embedding) to IndexedDB.
  * Uses `put` so re-extracting the same URL simply updates the existing record.
  */
+/**
+ * Persists a recipe object (with embedding) to IndexedDB
+ * and updates the saved URLs cache in chrome.storage.local.
+ */
 export async function saveRecipeLocally(recipe: Recipe): Promise<void> {
     const db = await openDb();
-    return new Promise((resolve, reject) => {
+    await new Promise<void>((resolve, reject) => {
         const tx = db.transaction(STORE_NAME, "readwrite");
         const store = tx.objectStore(STORE_NAME);
         const request = store.put(recipe);
@@ -39,6 +43,19 @@ export async function saveRecipeLocally(recipe: Recipe): Promise<void> {
         request.onerror = () => reject(request.error);
         tx.oncomplete = () => db.close();
     });
+
+    if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local && recipe.url) {
+        try {
+            const data: Record<string, any> = await chrome.storage.local.get("savedUrls");
+            const urls: string[] = Array.isArray(data.savedUrls) ? data.savedUrls : [];
+            if (!urls.includes(recipe.url)) {
+                urls.push(recipe.url);
+                await chrome.storage.local.set({ savedUrls: urls });
+            }
+        } catch (e) {
+            console.warn("Failed to update savedUrls cache", e);
+        }
+    }
 }
 
 /**
@@ -74,9 +91,16 @@ export async function getAllRecipes(): Promise<Recipe[]> {
 /**
  * Deletes a recipe by its id.
  */
+/**
+ * Deletes a recipe by its id
+ * and removes its URL from the chrome.storage.local cache.
+ */
 export async function deleteRecipe(id: string): Promise<void> {
+    // Attempt to get the recipe first so we know its URL
+    const recipe = await getRecipe(id);
+
     const db = await openDb();
-    return new Promise((resolve, reject) => {
+    await new Promise<void>((resolve, reject) => {
         const tx = db.transaction(STORE_NAME, "readwrite");
         const store = tx.objectStore(STORE_NAME);
         const request = store.delete(id);
@@ -84,6 +108,17 @@ export async function deleteRecipe(id: string): Promise<void> {
         request.onerror = () => reject(request.error);
         tx.oncomplete = () => db.close();
     });
+
+    if (recipe && recipe.url && typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
+        try {
+            const data: Record<string, any> = await chrome.storage.local.get("savedUrls");
+            let urls: string[] = Array.isArray(data.savedUrls) ? data.savedUrls : [];
+            urls = urls.filter(u => u !== recipe.url);
+            await chrome.storage.local.set({ savedUrls: urls });
+        } catch (e) {
+            console.warn("Failed to clear savedUrls cache", e);
+        }
+    }
 }
 
 /**
