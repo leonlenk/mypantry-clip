@@ -38,7 +38,7 @@ async function setupOffscreenDocument() {
 async function updateExtractionStatus(tabId: number, status: string, isError: boolean = false, isComplete: boolean = false) {
     if (isComplete || isError) {
         delete activeExtractions[tabId];
-        chrome.action.setBadgeText({ text: isError ? "ERR" : "DONE", tabId });
+        chrome.action.setBadgeText({ text: isError ? "ERR" : "✓", tabId });
         chrome.action.setBadgeBackgroundColor({ color: isError ? "#EF4444" : "#10B981", tabId });
     } else {
         activeExtractions[tabId] = status;
@@ -100,10 +100,18 @@ async function executeExtractionInBackground(tabId: number, apiKey: string, llmM
             await updateExtractionStatus(tabId, "Analyzing structured recipe data...");
         } else {
             console.log("[Recipe AI] No JSON-LD found, using Readability fallback.", `Text length: ${extractedData.textContent?.length ?? 0} chars.`);
-            await updateExtractionStatus(tabId, "Sending to LLM for analysis...");
+            const charCount = extractedData.textContent?.length ?? 0;
+            // Format character count with commas for readability
+            const formattedCount = new Intl.NumberFormat().format(charCount);
+            if (charCount > 10000) {
+                await updateExtractionStatus(tabId, `Processing large text (${formattedCount} chars)...`);
+            } else {
+                await updateExtractionStatus(tabId, `Reading page text (${formattedCount} chars)...`);
+            }
         }
 
         console.log("[Recipe AI] Sending request to LLM API...");
+        await updateExtractionStatus(tabId, `Asking ${llmProvider} to extract recipe...`);
         const recipeData = await extractRecipeWithClaude(
             extractedData,
             apiKey,
@@ -112,6 +120,7 @@ async function executeExtractionInBackground(tabId: number, apiKey: string, llmM
         );
 
         console.log("Successfully parsed recipe:", recipeData);
+        await updateExtractionStatus(tabId, "Successfully extracted recipe data!");
 
         await updateExtractionStatus(tabId, "Generating embedding vector...");
         console.log("[Recipe AI] Requesting embedding...");

@@ -35,7 +35,27 @@
             <button class="primary mt" id="confirm-extract-btn"
                 >Confirm Extraction</button
             >
-            <p id="extraction-status" class="status-msg mt"></p>
+
+            <div id="status-viewport" class="status-viewport hidden mt">
+                <div id="status-scroller" class="status-scroller">
+                    <!-- Status messages will be appended here -->
+                </div>
+            </div>
+
+            <div id="error-container" class="hidden mt text-center">
+                <button
+                    id="error-expand-btn"
+                    class="text-btn"
+                    style="font-size: 0.75rem; text-decoration: underline; background: none; border: none; color: var(--color-text-muted); cursor: pointer;"
+                    >Show Details</button
+                >
+                <div
+                    id="error-details"
+                    class="hidden"
+                    style="font-size: 0.75rem; color: #ef4444; margin-top: 0.5rem; background: rgba(239, 68, 68, 0.1); padding: 0.5rem; border-radius: 4px; text-align: left; max-height: 100px; overflow-y: auto; word-break: break-all;"
+                >
+                </div>
+            </div>
         </div>
         <button class="btn mt" id="open-pantry-btn" style="width: 100%;">
             Open My Pantry

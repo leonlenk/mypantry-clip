@@ -25,9 +25,39 @@ body {
         margin-top: var(--spacing-sm);
     }
 
+    .status-viewport {
+        height: 3.5rem;
+        overflow-y: hidden;
+        scroll-behavior: smooth;
+        position: relative;
+        /* create a fade effect at top and bottom */
+        -webkit-mask-image: linear-gradient(to bottom, transparent, black 30%, black 70%, transparent);
+        mask-image: linear-gradient(to bottom, transparent, black 30%, black 70%, transparent);
+
+        /* So scrolling doesn't push the parent box */
+        margin-top: var(--spacing-sm);
+    }
+
+    .status-scroller {
+        display: flex;
+        flex-direction: column;
+        padding: 1rem 0;
+        /* padding so first/last items can be centered */
+    }
+
     .status-msg {
         font-size: 0.8rem;
         color: var(--color-primary);
+        margin: 0.25rem 0;
+        text-align: center;
+        opacity: 0.4;
+        transition: opacity 0.3s ease, font-weight 0.3s ease;
+        min-height: 1.2rem;
+    }
+
+    .status-msg.active {
+        opacity: 1;
+        font-weight: bold;
     }
 }
 

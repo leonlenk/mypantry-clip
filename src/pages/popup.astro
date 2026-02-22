@@ -70,7 +70,56 @@ import SetupView from "../components/popup/SetupView.astro";
       const passwordInput = document.getElementById(
         "popup-password"
       ) as HTMLInputElement;
-      const extractionStatus = document.getElementById("extraction-status");
+
+      // Status UI Elements
+      const statusViewport = document.getElementById("status-viewport");
+      const statusScroller = document.getElementById("status-scroller");
+      const errorContainer = document.getElementById("error-container");
+      const errorExpandBtn = document.getElementById("error-expand-btn");
+      const errorDetails = document.getElementById("error-details");
+
+      function addStatusMessage(text: string, isError: boolean = false) {
+        if (!statusViewport || !statusScroller) return;
+
+        statusViewport.classList.remove("hidden");
+
+        const active = statusScroller.querySelectorAll(".active");
+        active.forEach((el) => el.classList.remove("active"));
+
+        const p = document.createElement("p");
+        p.className = "status-msg active";
+        p.textContent = isError ? "Extraction failed" : text;
+        if (isError) p.style.color = "#ef4444";
+
+        statusScroller.appendChild(p);
+
+        // Scroll to bottom
+        setTimeout(() => {
+          statusViewport.scrollTop = statusScroller.scrollHeight;
+        }, 50);
+
+        if (isError && errorContainer && errorDetails) {
+          errorContainer.classList.remove("hidden");
+          errorDetails.classList.add("hidden");
+          if (errorExpandBtn) errorExpandBtn.textContent = "Show Details";
+          errorDetails.textContent = text;
+        } else if (!isError && errorContainer) {
+          errorContainer.classList.add("hidden");
+        }
+      }
+
+      errorExpandBtn?.addEventListener("click", () => {
+        if (errorDetails) {
+          errorDetails.classList.toggle("hidden");
+          if (errorExpandBtn) {
+            errorExpandBtn.textContent = errorDetails.classList.contains(
+              "hidden"
+            )
+              ? "Show Details"
+              : "Hide Details";
+          }
+        }
+      });
 
       openPantryBtn?.addEventListener("click", () => {
         if (typeof chrome !== "undefined" && chrome.tabs) {
@@ -104,10 +153,7 @@ import SetupView from "../components/popup/SetupView.astro";
             if (passwordInput) passwordInput.classList.add("hidden");
             if (confirmExtractBtn) confirmExtractBtn.classList.add("hidden");
 
-            if (extractionStatus) {
-              extractionStatus.classList.remove("hidden");
-              extractionStatus.textContent = "Starting extraction...";
-            }
+            addStatusMessage("Starting extraction...");
 
             try {
               await executeExtraction(
@@ -117,11 +163,9 @@ import SetupView from "../components/popup/SetupView.astro";
               );
             } catch (err: any) {
               console.error("Extraction error", err);
-              if (extractionStatus) {
-                let msg = err.message || "Unknown error occurred";
-                if (msg.length > 80) msg = msg.substring(0, 80) + "...";
-                extractionStatus.textContent = `Error: ${msg}`;
-              }
+              let msg = err.message || "Unknown error occurred";
+              if (msg.length > 80) msg = msg.substring(0, 80) + "...";
+              addStatusMessage(`Error: ${msg}`, true);
             }
             return;
           }
@@ -138,8 +182,7 @@ import SetupView from "../components/popup/SetupView.astro";
       confirmExtractBtn?.addEventListener("click", async () => {
         const password = passwordInput?.value;
         if (!password) {
-          if (extractionStatus)
-            extractionStatus.textContent = "Please enter your password.";
+          addStatusMessage("Please enter your password.", true);
           return;
         }
 
@@ -148,8 +191,7 @@ import SetupView from "../components/popup/SetupView.astro";
           confirmExtractBtn.textContent = "Loading...";
         }
 
-        if (extractionStatus)
-          extractionStatus.textContent = "Decrypting keys...";
+        addStatusMessage("Decrypting keys...");
 
         try {
           const storageResult: Record<string, any> =
@@ -164,9 +206,7 @@ import SetupView from "../components/popup/SetupView.astro";
           const llmProvider = storageResult.llmProvider || "anthropic";
 
           if (!encryptedApiKey) {
-            if (extractionStatus)
-              extractionStatus.textContent =
-                "No API key found. Please run setup again.";
+            addStatusMessage("No API key found. Please run setup again.", true);
             if (confirmExtractBtn) {
               (confirmExtractBtn as HTMLButtonElement).disabled = false;
               confirmExtractBtn.textContent = "Confirm Extraction";
@@ -178,16 +218,14 @@ import SetupView from "../components/popup/SetupView.astro";
           await executeExtraction(apiKey, llmModel, llmProvider);
         } catch (error: any) {
           console.error(error);
-          if (extractionStatus) {
-            let msg = error.message || "Unknown error";
-            if (msg.length > 80) msg = msg.substring(0, 80) + "...";
-            extractionStatus.textContent = `Error: ${msg}`;
-          }
+          let msg = error.message || "Unknown error";
+          if (msg.length > 80) msg = msg.substring(0, 80) + "...";
+          addStatusMessage(`Error: ${msg}`, true);
         } finally {
           if (
             confirmExtractBtn &&
-            extractionStatus &&
-            !extractionStatus.textContent?.includes("successfully")
+            errorContainer &&
+            !errorContainer.classList.contains("hidden")
           ) {
             // Only revert button if we didn't succeed, so they can try again if they want
             (confirmExtractBtn as HTMLButtonElement).disabled = false;
@@ -197,13 +235,12 @@ import SetupView from "../components/popup/SetupView.astro";
       });
 
       // Listen for background updates
+      // Listen for background updates
       chrome.runtime.onMessage.addListener((message) => {
         if (message.type === "EXTRACTION_STATUS_UPDATE") {
           const { status, isError, isComplete } = message;
-          if (extractionStatus) {
-            extractionStatus.classList.remove("hidden");
-            extractionStatus.textContent = status;
-          }
+          addStatusMessage(status, isError);
+
           if (isError && confirmExtractBtn) {
             (confirmExtractBtn as HTMLButtonElement).disabled = false;
             confirmExtractBtn.textContent = "Confirm Extraction";
@@ -239,11 +276,9 @@ import SetupView from "../components/popup/SetupView.astro";
                 if (confirmExtractBtn)
                   confirmExtractBtn.classList.add("hidden");
 
-                if (extractionStatus) {
-                  extractionStatus.classList.remove("hidden");
-                  extractionStatus.textContent =
-                    response.status || "Extracting in background...";
-                }
+                addStatusMessage(
+                  response.status || "Extracting in background..."
+                );
               }
             }
           }
@@ -257,11 +292,7 @@ import SetupView from "../components/popup/SetupView.astro";
         llmModel: string,
         llmProvider: string
       ) {
-        if (extractionStatus) {
-          extractionStatus.classList.remove("hidden");
-          extractionStatus.textContent =
-            "Initializing background extraction...";
-        }
+        addStatusMessage("Initializing background extraction...");
 
         const [tab] = await chrome.tabs.query({
           active: true,
@@ -269,8 +300,7 @@ import SetupView from "../components/popup/SetupView.astro";
         });
 
         if (!tab || !tab.id) {
-          if (extractionStatus)
-            extractionStatus.textContent = "Could not find active tab.";
+          addStatusMessage("Could not find active tab.", true);
           return;
         }
 
