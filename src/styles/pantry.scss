@@ -38,7 +38,60 @@ body {
         gap: var(--spacing-md);
         justify-content: space-between;
         align-items: center;
-        margin-bottom: var(--spacing-md);
+
+        .filters ul {
+            display: flex;
+            gap: var(--spacing-sm);
+            list-style: none;
+            padding: 0;
+            margin: 0;
+
+            .filter-btn {
+                background: none;
+                border: 1px solid rgba(139, 115, 85, 0.2);
+                color: var(--color-text-muted);
+                padding: 0.4rem 1rem;
+                border-radius: 20px;
+                cursor: pointer;
+                font-size: 0.9rem;
+                font-weight: 500;
+                transition: all 0.2s ease;
+
+                &:hover {
+                    background-color: rgba(139, 115, 85, 0.05);
+                    color: var(--color-text);
+                }
+
+                &.active {
+                    background-color: var(--color-accent);
+                    color: white;
+                    border-color: var(--color-accent);
+                }
+            }
+
+            .filter-select {
+                appearance: none;
+                background: transparent url("data:image/svg+xml;utf8,<svg fill='rgba(139, 115, 85, 0.6)' height='20' viewBox='0 0 24 24' width='20' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/><path d='M0 0h24v24H0z' fill='none'/></svg>") no-repeat right 8px center;
+                border: 1px solid rgba(139, 115, 85, 0.2);
+                color: var(--color-text-muted);
+                padding: 0.4rem 2rem 0.4rem 1rem;
+                border-radius: 20px;
+                cursor: pointer;
+                font-size: 0.9rem;
+                font-weight: 500;
+                transition: all 0.2s ease;
+                outline: none;
+
+                &:hover {
+                    background-color: rgba(139, 115, 85, 0.05);
+                    color: var(--color-text);
+                }
+
+                &:focus {
+                    border-color: var(--color-accent);
+                }
+            }
+        }
 
         .search-wrap {
             display: flex;
@@ -75,49 +128,6 @@ body {
                 border-radius: 20px;
                 padding: 0.5rem 1.5rem;
             }
-        }
-    }
-
-    .filter-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-
-        .filters ul {
-            display: flex;
-            gap: var(--spacing-sm);
-            list-style: none;
-            padding: 0;
-            margin: 0;
-
-            .filter-btn {
-                background: none;
-                border: 1px solid rgba(139, 115, 85, 0.2);
-                color: var(--color-text-muted);
-                padding: 0.4rem 1rem;
-                border-radius: 20px;
-                cursor: pointer;
-                font-size: 0.9rem;
-                font-weight: 500;
-                transition: all 0.2s ease;
-
-                &:hover {
-                    background-color: rgba(139, 115, 85, 0.05);
-                    color: var(--color-text);
-                }
-
-                &.active {
-                    background-color: var(--color-accent);
-                    color: white;
-                    border-color: var(--color-accent);
-                }
-            }
-        }
-
-        .settings-link {
-            font-size: 0.9rem;
-            padding: 0.4rem 1rem;
-            border-radius: 20px;
         }
     }
 }
@@ -162,7 +172,6 @@ body {
     .card-actions {
         display: flex;
         gap: var(--spacing-xs);
-        opacity: 0;
         transition: opacity 0.2s ease;
     }
 
@@ -181,8 +190,11 @@ body {
     .delete-btn {
         color: var(--color-text-muted);
         font-size: 1rem;
+        opacity: 0.4;
+        transition: opacity 0.2s ease, background 0.2s ease, color 0.2s ease;
 
         &:hover {
+            opacity: 1;
             background: rgba(220, 38, 38, 0.1);
             color: #dc2626;
         }
@@ -237,7 +249,7 @@ body {
         box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.08);
         border-color: rgba(139, 115, 85, 0.1);
 
-        .card-actions {
+        .card-actions .delete-btn {
             opacity: 1;
         }
 

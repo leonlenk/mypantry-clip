@@ -38,9 +38,18 @@ export interface Ingredient {
     unit: string | null;     // e.g., "cups", "tbsp", "grams"
     item: string;            // e.g., "all-purpose flour"
     preparation?: string;    // e.g., "sifted", "chopped"
+    group?: string;          // Optional section name (e.g., "Cake", "Frosting")
+    substituted?: {
+        quantity?: number;
+        unit?: string;
+        item?: string;
+        preparation?: string;
+        rawText?: string;
+    } | string; // Keep string for backwards compatibility with older stored data
 }
 
 export interface InstructionStep {
     stepNumber: number;
     text: string;
+    group?: string;          // Optional section name (e.g., "Cake", "Frosting")
 }

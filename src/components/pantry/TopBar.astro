@@ -3,6 +3,39 @@
 
 <header class="top-bar">
     <div class="top-row">
+        <div
+            class="filters-container"
+            style="flex: 1; display: flex; align-items: center;"
+        >
+            <nav class="filters">
+                <ul>
+                    <li>
+                        <button class="filter-btn active" data-filter="all"
+                            >All</button
+                        >
+                    </li>
+                    <li>
+                        <button class="filter-btn" data-filter="recent"
+                            >Recent</button
+                        >
+                    </li>
+                    <li>
+                        <button class="filter-btn" data-filter="favorites"
+                            >Favorites</button
+                        >
+                    </li>
+                    <li>
+                        <select
+                            id="tag-filter"
+                            class="filter-select"
+                            style="margin-left: var(--spacing-sm);"
+                        >
+                            <option value="">Tags</option>
+                        </select>
+                    </li>
+                </ul>
+            </nav>
+        </div>
         <div class="search-wrap">
             <input
                 type="text"
@@ -11,26 +44,8 @@
             />
             <button class="primary" id="search-btn">Search</button>
         </div>
-        <span id="recipe-count" class="recipe-count"></span>
-    </div>
-
-    <div class="filter-row">
-        <nav class="filters">
-            <ul>
-                <li>
-                    <button class="filter-btn active" data-filter="all"
-                        >All Recipes</button>
-                </li>
-                <li>
-                    <button class="filter-btn" data-filter="recent"
-                        >Recent Additions</button>
-                </li>
-                <li>
-                    <button class="filter-btn" data-filter="favorites"
-                        >Favorites</button>
-                </li>
-            </ul>
-        </nav>
-        <a href="setup.html" class="settings-link btn outline">Settings</a>
+        <div style="flex: 1; text-align: right;">
+            <span id="recipe-count" class="recipe-count"></span>
+        </div>
     </div>
 </header>

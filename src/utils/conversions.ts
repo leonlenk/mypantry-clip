@@ -185,6 +185,13 @@ export function decimalToFraction(q: number): string {
         return whole > 0 ? whole.toString() : "0";
     }
 
+    // If the difference is still relatively large (e.g. > 0.05),
+    // it means it doesn't neatly fit our typical US volume fractions.
+    // Instead of forcing it to a whole number or a wrong fraction, just return a rounded decimal.
+    if (minDiff > 0.05) {
+        return (Math.round(q * 100) / 100).toString();
+    }
+
     if (whole > 0) {
         return `${whole} ${closest.text}`;
     }

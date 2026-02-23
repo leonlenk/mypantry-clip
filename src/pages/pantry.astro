@@ -41,7 +41,12 @@ import RecipeGrid from "../components/pantry/RecipeGrid.astro";
       ) as HTMLButtonElement;
       const recipeCountEl = document.getElementById("recipe-count");
       const filterLinks = document.querySelectorAll(".filter-btn");
+      const tagFilterSelect = document.getElementById(
+        "tag-filter"
+      ) as HTMLSelectElement;
+
       let currentFilter = "all";
+      let currentTagFilter = "";
 
       document.addEventListener("DOMContentLoaded", async () => {
         // Redirect to setup if not configured
@@ -70,16 +75,58 @@ import RecipeGrid from "../components/pantry/RecipeGrid.astro";
           });
         });
 
+        tagFilterSelect?.addEventListener("change", async (e) => {
+          currentTagFilter = (e.target as HTMLSelectElement).value;
+          await loadRecipes();
+        });
+
         await loadRecipes();
       });
 
+      function populateTags(allRecipes: Recipe[]) {
+        if (!tagFilterSelect) return;
+        const allTags = new Set<string>();
+        allRecipes.forEach((r) => {
+          if (r.tags) {
+            r.tags.forEach((t) => allTags.add(t));
+          }
+        });
+
+        const currentVal = tagFilterSelect.value;
+
+        tagFilterSelect.innerHTML = '<option value="">All Tags</option>';
+        Array.from(allTags)
+          .sort()
+          .forEach((tag) => {
+            const option = document.createElement("option");
+            option.value = tag;
+            option.textContent = tag;
+            tagFilterSelect.appendChild(option);
+          });
+
+        if (currentVal && allTags.has(currentVal)) {
+          tagFilterSelect.value = currentVal;
+        } else {
+          currentTagFilter = "";
+        }
+      }
+
       async function loadRecipes() {
         let recipes = await getAllRecipes();
+
+        // Populate tags before applying any filters so all tags are available
+        populateTags(recipes);
 
         if (currentFilter === "recent") {
           recipes = recipes.reverse();
         } else if (currentFilter === "favorites") {
           recipes = recipes.filter((r) => r.isFavorite);
+        }
+
+        if (currentTagFilter) {
+          recipes = recipes.filter(
+            (r) => r.tags && r.tags.includes(currentTagFilter)
+          );
         }
 
         if (recipeCountEl)
@@ -164,6 +211,11 @@ import RecipeGrid from "../components/pantry/RecipeGrid.astro";
             ?.addEventListener("click", async (e) => {
               e.stopPropagation();
               recipe.isFavorite = !recipe.isFavorite;
+
+              // Immediately update UI before db op
+              (e.currentTarget as HTMLButtonElement).textContent =
+                recipe.isFavorite ? "★" : "☆";
+
               await saveRecipeLocally(recipe);
               if (currentFilter === "favorites" && !recipe.isFavorite) {
                 card.remove();
@@ -176,9 +228,6 @@ import RecipeGrid from "../components/pantry/RecipeGrid.astro";
                   grid.classList.add("hidden");
                   emptyState.classList.remove("hidden");
                 }
-              } else {
-                (e.currentTarget as HTMLButtonElement).textContent =
-                  recipe.isFavorite ? "★" : "☆";
               }
             });
 

@@ -4,7 +4,6 @@
 
 body {
     width: 350px;
-    min-height: 480px;
     padding: var(--spacing-md);
     margin: 0;
     background-color: var(--color-bg);
@@ -26,7 +25,7 @@ body {
     }
 
     .status-viewport {
-        height: 3.5rem;
+        height: 5rem;
         overflow-y: hidden;
         scroll-behavior: smooth;
         position: relative;

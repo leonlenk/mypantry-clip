@@ -16,12 +16,17 @@ import "../styles/recipe.scss";
                 <button class="btn outline" id="back-btn"
                     >← Back to Pantry</button
                 >
-                <a
-                    href="#"
-                    target="_blank"
-                    id="source-link"
-                    class="btn primary hidden">View Source</a
+                <div
+                    class="top-bar-actions"
+                    style="display: flex; gap: var(--spacing-sm);"
                 >
+                    <a
+                        href="#"
+                        target="_blank"
+                        id="source-link"
+                        class="btn primary hidden">View Source</a
+                    >
+                </div>
             </header>
 
             <main class="content" id="recipe-content">
@@ -33,19 +38,42 @@ import "../styles/recipe.scss";
                 </div>
 
                 <article id="recipe-article" class="recipe-article hidden">
-                    <header class="article-header">
-                        <h1 id="recipe-title"></h1>
+                    <header class="article-header" id="recipe-display-header">
+                        <div
+                            class="title-row"
+                            style="display: flex; justify-content: center; align-items: center; gap: var(--spacing-sm); margin-bottom: var(--spacing-md);"
+                        >
+                            <div
+                                class="title-container"
+                                style="position: relative; display: inline-block;"
+                            >
+                                <h1 id="recipe-title" style="margin: 0;"></h1>
+                                <input
+                                    type="text"
+                                    id="recipe-title-input"
+                                    class="title-edit-input hidden"
+                                />
+                                <button
+                                    id="edit-title-btn"
+                                    class="title-pencil"
+                                    title="Edit Title">✏️</button
+                                >
+                            </div>
+                        </div>
                         <div class="meta-tags" id="recipe-meta"></div>
                         <p class="description" id="recipe-desc"></p>
                     </header>
 
                     <div class="grid-layout">
                         <section class="ingredients-section card">
-                            <div class="section-header">
-                                <h2>Ingredients</h2>
+                            <div
+                                class="section-header"
+                                style="flex-direction: column; align-items: flex-start; gap: var(--spacing-sm);"
+                            >
+                                <h2 style="margin-bottom: 0;">Ingredients</h2>
                                 <div
                                     class="controls-row"
-                                    style="display: flex; gap: 1rem; align-items: center;"
+                                    style="display: flex; gap: 1rem; align-items: center; width: 100%; justify-content: space-between;"
                                 >
                                     <div class="unit-control">
                                         <select
@@ -62,9 +90,7 @@ import "../styles/recipe.scss";
                                         </select>
                                     </div>
                                     <div class="batch-control">
-                                        <label for="batch-input"
-                                            >Batch Size:</label
-                                        >
+                                        <label for="batch-input">Yield:</label>
                                         <input
                                             type="number"
                                             id="batch-input"
@@ -75,6 +101,18 @@ import "../styles/recipe.scss";
                                     </div>
                                 </div>
                             </div>
+
+                            <div
+                                style="margin-top: var(--spacing-md); margin-bottom: var(--spacing-lg); display: flex; justify-content: center;"
+                            >
+                                <button
+                                    id="open-sub-modal-btn"
+                                    class="btn outline"
+                                    style="font-size: 0.85rem; padding: 0.3rem 0.6rem;"
+                                    >✨ Ask for Substitutions</button
+                                >
+                            </div>
+
                             <ul id="ingredients-list" class="ingredients-list">
                             </ul>
                         </section>
@@ -92,8 +130,55 @@ import "../styles/recipe.scss";
             </main>
         </div>
 
+        <!-- Substitution Modal -->
+        <div id="sub-modal" class="modal-overlay hidden">
+            <div class="modal-content">
+                <button id="close-sub-modal-btn" class="close-btn"
+                    >&times;</button
+                >
+                <h2>Ask for Substitutions</h2>
+                <p>
+                    What ingredient do you want to substitute, and do you have
+                    any specific needs (e.g. vegan, gluten-free, no dairy)?
+                </p>
+
+                <div class="sub-input-group mt">
+                    <input
+                        type="text"
+                        id="sub-input"
+                        placeholder="e.g. Substitute the egg with something vegan..."
+                    />
+                    <button id="sub-send-btn" class="btn primary">Ask AI</button
+                    >
+                </div>
+
+                <div id="sub-status-area" class="sub-status-area hidden mt">
+                    <div class="spinner"></div>
+                    <span id="sub-status-text">Analyzing recipe...</span>
+                </div>
+
+                <div id="sub-result-area" class="sub-result-area hidden mt">
+                    <h3>Reasoning</h3>
+                    <p id="sub-reasoning-text" class="reasoning-text"></p>
+
+                    <div id="sub-suggestions-container"></div>
+
+                    <div
+                        style="text-align: right; margin-top: var(--spacing-md); display: flex; justify-content: flex-end; gap: var(--spacing-sm);"
+                    >
+                        <button id="discard-sub-btn" class="btn outline"
+                            >Discard</button
+                        >
+                        <button id="apply-sub-btn" class="btn primary"
+                            >Apply to Recipe</button
+                        >
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <script>
-            import { getRecipe } from "../utils/db";
+            import { getRecipe, saveRecipeLocally } from "../utils/db";
             import {
                 convertVolumeToWeight,
                 formatUSVolume,
@@ -103,6 +188,7 @@ import "../styles/recipe.scss";
             let currentRecipe: any = null;
             let originalBatchSize = 1;
             let currentUnitSystem = "us"; // "us" or "metric"
+            let isFirstRender = true;
 
             document.addEventListener("DOMContentLoaded", async () => {
                 const urlParams = new URLSearchParams(window.location.search);
@@ -131,7 +217,457 @@ import "../styles/recipe.scss";
                     console.error(e);
                     showError();
                 }
+
+                // Title Edit functionality
+                const titleHeading = document.getElementById("recipe-title");
+                const titleInput = document.getElementById(
+                    "recipe-title-input"
+                ) as HTMLInputElement;
+                const editTitleBtn = document.getElementById("edit-title-btn");
+                const titleContainer =
+                    document.querySelector(".title-container");
+
+                function enableTitleEdit() {
+                    if (
+                        !currentRecipe ||
+                        !titleHeading ||
+                        !titleInput ||
+                        !editTitleBtn
+                    )
+                        return;
+
+                    titleInput.value = currentRecipe.title || "";
+                    titleHeading.classList.add("hidden");
+                    editTitleBtn.classList.add("hidden");
+                    titleInput.classList.remove("hidden");
+
+                    // Focus and put cursor at end
+                    titleInput.focus();
+                    titleInput.setSelectionRange(
+                        titleInput.value.length,
+                        titleInput.value.length
+                    );
+                }
+
+                async function saveTitleEdit() {
+                    if (
+                        !currentRecipe ||
+                        !titleHeading ||
+                        !titleInput ||
+                        !editTitleBtn
+                    )
+                        return;
+
+                    const newTitle = titleInput.value.trim();
+                    if (newTitle && newTitle !== currentRecipe.title) {
+                        currentRecipe.title = newTitle;
+                        titleHeading.textContent = newTitle;
+                        await saveRecipeLocally(currentRecipe);
+                    } else {
+                        // Revert if empty
+                        titleInput.value = currentRecipe.title || "";
+                    }
+
+                    titleInput.classList.add("hidden");
+                    titleHeading.classList.remove("hidden");
+                    editTitleBtn.classList.remove("hidden");
+                }
+
+                editTitleBtn?.addEventListener("click", enableTitleEdit);
+                titleInput?.addEventListener("blur", saveTitleEdit);
+                titleInput?.addEventListener("keydown", (e) => {
+                    if (e.key === "Enter") {
+                        titleInput.blur();
+                    } else if (e.key === "Escape") {
+                        titleInput.value = currentRecipe.title || "";
+                        titleInput.blur();
+                    }
+                });
+
+                // Substitution Modal Logic
+                const subModal = document.getElementById("sub-modal");
+                const openSubBtn =
+                    document.getElementById("open-sub-modal-btn");
+                const closeSubBtn = document.getElementById(
+                    "close-sub-modal-btn"
+                );
+                const subInput = document.getElementById(
+                    "sub-input"
+                ) as HTMLInputElement;
+                const subSendBtn = document.getElementById("sub-send-btn");
+                const subStatusArea =
+                    document.getElementById("sub-status-area");
+                const subStatusText =
+                    document.getElementById("sub-status-text");
+                const subResultArea =
+                    document.getElementById("sub-result-area");
+                const subReasoningText =
+                    document.getElementById("sub-reasoning-text");
+                const subSuggestionsContainer = document.getElementById(
+                    "sub-suggestions-container"
+                );
+                const applySubBtn = document.getElementById("apply-sub-btn");
+                const discardSubBtn =
+                    document.getElementById("discard-sub-btn");
+
+                let currentSubResult: any = null;
+
+                openSubBtn?.addEventListener("click", () => {
+                    subModal?.classList.remove("hidden");
+                    subInput?.focus();
+                    document.body.style.overflow = "hidden";
+                });
+
+                closeSubBtn?.addEventListener("click", () => {
+                    subModal?.classList.add("hidden");
+                    subStatusArea?.classList.add("hidden");
+                    subResultArea?.classList.add("hidden");
+                    document.body.style.overflow = "";
+                });
+
+                discardSubBtn?.addEventListener("click", () => {
+                    subModal?.classList.add("hidden");
+                    subStatusArea?.classList.add("hidden");
+                    subResultArea?.classList.add("hidden");
+                    subInput.value = "";
+                    currentSubResult = null;
+                    document.body.style.overflow = "";
+                });
+
+                subSendBtn?.addEventListener("click", async () => {
+                    const prompt = subInput.value.trim();
+                    if (!prompt || !currentRecipe) return;
+
+                    subStatusArea?.classList.remove("hidden");
+                    subResultArea?.classList.add("hidden");
+                    if (subStatusText)
+                        subStatusText.textContent =
+                            "Starting AI substitution analysis...";
+
+                    chrome.storage.local.get(
+                        [
+                            "plaintextApiKey",
+                            "encryptedApiKey",
+                            "llmModel",
+                            "llmProvider",
+                        ],
+                        async (res: {
+                            plaintextApiKey?: string;
+                            encryptedApiKey?: string;
+                            llmModel?: string;
+                            llmProvider?: string;
+                        }) => {
+                            const {
+                                plaintextApiKey,
+                                encryptedApiKey,
+                                llmModel,
+                                llmProvider,
+                            } = res;
+
+                            const provider = llmProvider || "anthropic";
+                            console.log(
+                                "[Substitution] Using provider:",
+                                provider,
+                                "model:",
+                                llmModel
+                            );
+
+                            let apiKey = plaintextApiKey;
+
+                            if (!apiKey) {
+                                if (encryptedApiKey) {
+                                    if (subStatusText)
+                                        subStatusText.textContent =
+                                            "Error: API key is encrypted. Please disable master password in setup to use substitutions.";
+                                    return;
+                                }
+                                console.error(
+                                    "[Substitution] API key not found for provider:",
+                                    provider
+                                );
+                                if (subStatusText)
+                                    subStatusText.textContent =
+                                        "Error: API key for " +
+                                        provider +
+                                        " not set.";
+                                return;
+                            }
+
+                            chrome.tabs.query(
+                                { active: true, currentWindow: true },
+                                (tabs) => {
+                                    const tabId = tabs[0]?.id;
+                                    console.log(
+                                        "[Substitution] Sending request to background script for tab:",
+                                        tabId
+                                    );
+                                    chrome.runtime.sendMessage({
+                                        type: "ASK_SUBSTITUTION",
+                                        tabId: tabId,
+                                        recipeData: currentRecipe,
+                                        userPrompt: prompt,
+                                        apiKey,
+                                        llmModel:
+                                            llmModel ||
+                                            "claude-3-5-sonnet-20241022",
+                                        llmProvider: provider,
+                                    });
+                                }
+                            );
+                        }
+                    );
+                });
+
+                subInput?.addEventListener("keydown", (e) => {
+                    if (e.key === "Enter") {
+                        subSendBtn?.click();
+                    }
+                });
+
+                chrome.runtime.onMessage.addListener((message) => {
+                    if (message.type === "SUBSTITUTION_STATUS_UPDATE") {
+                        if (
+                            subStatusArea &&
+                            subStatusArea.classList.contains("hidden")
+                        ) {
+                            subStatusArea.classList.remove("hidden");
+                        }
+                        if (subStatusText) {
+                            subStatusText.textContent = message.status;
+                        }
+
+                        if (message.isComplete) {
+                            subStatusArea?.classList.add("hidden");
+                            if (!message.isError && message.result) {
+                                subResultArea?.classList.remove("hidden");
+                                currentSubResult = message.result;
+                                if (subReasoningText)
+                                    subReasoningText.textContent =
+                                        currentSubResult.thoughtProcess;
+
+                                if (subSuggestionsContainer) {
+                                    subSuggestionsContainer.innerHTML =
+                                        "<h3>Suggested Substitutions</h3>";
+                                    if (
+                                        currentSubResult.substitutions &&
+                                        Array.isArray(
+                                            currentSubResult.substitutions
+                                        )
+                                    ) {
+                                        currentSubResult.substitutions.forEach(
+                                            (sub: any, i: number) => {
+                                                const label =
+                                                    document.createElement(
+                                                        "label"
+                                                    );
+                                                label.className =
+                                                    "suggestion-label";
+
+                                                label.innerHTML = `<input type="checkbox" class="sub-checkbox" data-index="${i}" checked />
+                                                                   <span class="suggestion-text">${sub.rawText}</span>`;
+                                                subSuggestionsContainer.appendChild(
+                                                    label
+                                                );
+                                            }
+                                        );
+                                    }
+                                }
+                            } else if (message.isError) {
+                                subStatusArea?.classList.remove("hidden");
+                                if (subStatusText)
+                                    subStatusText.textContent = message.status;
+                            }
+                        }
+                    }
+                });
+
+                applySubBtn?.addEventListener("click", async () => {
+                    if (
+                        !currentRecipe ||
+                        !currentSubResult ||
+                        !currentSubResult.substitutions
+                    )
+                        return;
+
+                    let appliedCount = 0;
+
+                    const checkboxes = document.querySelectorAll(
+                        ".sub-checkbox"
+                    ) as NodeListOf<HTMLInputElement>;
+                    const checkedIndices = Array.from(checkboxes)
+                        .filter((cb) => cb.checked)
+                        .map((cb) =>
+                            parseInt(cb.getAttribute("data-index") || "-1", 10)
+                        );
+
+                    currentSubResult.substitutions.forEach(
+                        (subResult: any, i: number) => {
+                            if (!checkedIndices.includes(i)) return; // Skip unchecked items
+
+                            const targetIndex = subResult.ingredientId;
+                            if (
+                                typeof targetIndex === "number" &&
+                                targetIndex >= 0 &&
+                                targetIndex < currentRecipe.ingredients.length
+                            ) {
+                                const targetIngredient =
+                                    currentRecipe.ingredients[targetIndex];
+
+                                targetIngredient.substituted = {
+                                    quantity: subResult.quantity,
+                                    unit: subResult.unit,
+                                    item: subResult.item,
+                                    preparation: subResult.preparation,
+                                    rawText: subResult.rawText,
+                                };
+                                appliedCount++;
+                            }
+                        }
+                    );
+
+                    if (appliedCount > 0) {
+                        await saveRecipeLocally(currentRecipe);
+                        const mult =
+                            parseFloat(
+                                (
+                                    document.getElementById(
+                                        "batch-input"
+                                    ) as HTMLInputElement
+                                ).value
+                            ) / originalBatchSize || 1;
+                        renderIngredients(currentRecipe, mult);
+
+                        subModal?.classList.add("hidden");
+                        subStatusArea?.classList.add("hidden");
+                        subResultArea?.classList.add("hidden");
+                        subInput.value = "";
+                        currentSubResult = null;
+                        document.body.style.overflow = "";
+                    } else {
+                        alert(
+                            "Could not automatically map the substitution to the original ingredients using their IDs. Please try again."
+                        );
+                    }
+                });
             });
+
+            document.addEventListener("click", async (e) => {
+                const revertBtn = (e.target as Element).closest(".revert-sub");
+                if (revertBtn && currentRecipe) {
+                    const indexStr = revertBtn.getAttribute("data-index");
+                    if (indexStr) {
+                        const idx = parseInt(indexStr, 10);
+                        if (
+                            !isNaN(idx) &&
+                            idx >= 0 &&
+                            idx < currentRecipe.ingredients.length
+                        ) {
+                            delete currentRecipe.ingredients[idx].substituted;
+                            await saveRecipeLocally(currentRecipe);
+
+                            const mult =
+                                parseFloat(
+                                    (
+                                        document.getElementById(
+                                            "batch-input"
+                                        ) as HTMLInputElement
+                                    ).value
+                                ) / originalBatchSize || 1;
+                            renderIngredients(currentRecipe, mult);
+                        }
+                    }
+                }
+            });
+
+            document.addEventListener("click", async (e) => {
+                const removeBtn = (e.target as Element).closest(".remove-tag");
+                if (removeBtn && currentRecipe) {
+                    const tagToRemove = removeBtn.getAttribute("data-tag");
+                    if (tagToRemove) {
+                        currentRecipe.tags = (currentRecipe.tags || []).filter(
+                            (t: string) => t !== tagToRemove
+                        );
+                        await saveRecipeLocally(currentRecipe);
+                        renderTags();
+                    }
+                }
+            });
+
+            document.addEventListener("keydown", async (e) => {
+                const target = e.target as Element;
+                if (
+                    target &&
+                    target.classList.contains("tag-input") &&
+                    e.key === "Enter"
+                ) {
+                    e.preventDefault();
+                    const input = target as HTMLInputElement;
+                    const newTag = input.value.trim();
+                    if (newTag && currentRecipe) {
+                        currentRecipe.tags = currentRecipe.tags || [];
+                        if (!currentRecipe.tags.includes(newTag)) {
+                            currentRecipe.tags.push(newTag);
+                            await saveRecipeLocally(currentRecipe);
+                            renderTags();
+                            // Keep focus on input after re-render
+                            setTimeout(() => {
+                                const newInput = document.querySelector(
+                                    ".tag-input"
+                                ) as HTMLInputElement;
+                                if (newInput) newInput.focus();
+                            }, 50);
+                        } else {
+                            input.value = ""; // Clear if duplicate
+                        }
+                    }
+                }
+            });
+
+            function renderTags() {
+                const metaEl = document.getElementById("recipe-meta");
+                if (metaEl && currentRecipe) {
+                    const metaHtml = [
+                        currentRecipe.totalTimeMinutes
+                            ? `⏱ ${currentRecipe.totalTimeMinutes}m`
+                            : null,
+                        currentRecipe.servings
+                            ? `🍽 ${currentRecipe.servings} servings`
+                            : null,
+                        currentRecipe.yield
+                            ? `📦 Yield: ${currentRecipe.yield}`
+                            : null,
+                    ].filter(Boolean);
+
+                    const escapeHtml = (unsafe: string) => {
+                        return unsafe
+                            .replace(/&/g, "&amp;")
+                            .replace(/</g, "&lt;")
+                            .replace(/>/g, "&gt;")
+                            .replace(/"/g, "&quot;")
+                            .replace(/'/g, "&#039;");
+                    };
+
+                    const tagsHtml = (currentRecipe.tags || []).map(
+                        (t: string) =>
+                            `<span class="tag">${escapeHtml(
+                                t
+                            )} <button class="remove-tag" data-tag="${escapeHtml(
+                                t
+                            )}" title="Remove tag">&times;</button></span>`
+                    );
+
+                    tagsHtml.push(
+                        `<input type="text" class="tag-input" placeholder="+ Add tag" />`
+                    );
+
+                    metaEl.innerHTML = `
+                    <div class="meta-info">${metaHtml.join(
+                        " &nbsp;·&nbsp; "
+                    )}</div>
+                    <div class="tags">${tagsHtml.join("")}</div>
+                `;
+                }
+            }
 
             function showError() {
                 document.getElementById("loading")?.classList.add("hidden");
@@ -165,29 +701,52 @@ import "../styles/recipe.scss";
                     sourceLink.classList.remove("hidden");
                 }
 
-                // Meta tags
-                const metaEl = document.getElementById("recipe-meta");
-                if (metaEl) {
-                    const metaHtml = [
-                        recipe.totalTimeMinutes
-                            ? `⏱ ${recipe.totalTimeMinutes}m`
-                            : null,
-                        recipe.servings
-                            ? `🍽 ${recipe.servings} servings`
-                            : null,
-                        recipe.yield ? `📦 ${recipe.yield}` : null,
-                    ].filter(Boolean);
+                renderTags();
 
-                    const tagsHtml = (recipe.tags || []).map(
-                        (t: string) => `<span class="tag">${t}</span>`
-                    );
-
-                    metaEl.innerHTML = `
-                    <div class="meta-info">${metaHtml.join(
-                        " &nbsp;·&nbsp; "
-                    )}</div>
-                    <div class="tags">${tagsHtml.join("")}</div>
-                `;
+                if (isFirstRender) {
+                    const unitSelect = document.getElementById(
+                        "unit-system-select"
+                    ) as HTMLSelectElement;
+                    // Determine initial unit system by scanning original ingredients
+                    let metricCount = 0;
+                    let usCount = 0;
+                    if (recipe.ingredients) {
+                        recipe.ingredients.forEach((ing: any) => {
+                            const u = (ing.unit || "").toLowerCase();
+                            if (
+                                [
+                                    "g",
+                                    "gram",
+                                    "grams",
+                                    "ml",
+                                    "milliliter",
+                                    "milliliters",
+                                ].includes(u)
+                            ) {
+                                metricCount++;
+                            } else if (
+                                [
+                                    "cup",
+                                    "cups",
+                                    "tbsp",
+                                    "tsp",
+                                    "ounce",
+                                    "oz",
+                                    "fl oz",
+                                ].includes(u)
+                            ) {
+                                usCount++;
+                            }
+                        });
+                    }
+                    if (metricCount > usCount) {
+                        currentUnitSystem = "metric";
+                        if (unitSelect) unitSelect.value = "metric";
+                    } else {
+                        currentUnitSystem = "us";
+                        if (unitSelect) unitSelect.value = "us";
+                    }
+                    isFirstRender = false;
                 }
 
                 // Parse default batch size from yield
@@ -247,7 +806,20 @@ import "../styles/recipe.scss";
                 const instructionsList =
                     document.getElementById("instructions-list");
                 if (instructionsList && recipe.instructions) {
+                    let currentInstGroup = "";
                     recipe.instructions.forEach((inst: any) => {
+                        const actualGroup = inst.group ? inst.group.trim() : "";
+                        if (
+                            actualGroup !== currentInstGroup &&
+                            actualGroup !== ""
+                        ) {
+                            const groupHeader = document.createElement("h3");
+                            groupHeader.className = "instruction-group-header";
+                            groupHeader.textContent = actualGroup;
+                            instructionsList.appendChild(groupHeader);
+                            currentInstGroup = actualGroup;
+                        }
+
                         const div = document.createElement("div");
                         div.className = "instruction-step";
                         div.innerHTML = `
@@ -276,8 +848,21 @@ import "../styles/recipe.scss";
                 if (!ingredientsList || !recipe || !recipe.ingredients) return;
 
                 ingredientsList.innerHTML = "";
-                recipe.ingredients.forEach((ing: any) => {
+
+                let currentGroup = "";
+
+                recipe.ingredients.forEach((ing: any, idx: number) => {
+                    const actualGroup = ing.group ? ing.group.trim() : "";
+                    if (actualGroup !== currentGroup && actualGroup !== "") {
+                        const groupHeader = document.createElement("h3");
+                        groupHeader.className = "ingredient-group-header";
+                        groupHeader.textContent = actualGroup;
+                        ingredientsList.appendChild(groupHeader);
+                        currentGroup = actualGroup;
+                    }
+
                     const li = document.createElement("li");
+                    let text = "";
 
                     if (ing.quantity !== null && ing.quantity !== undefined) {
                         const scaled = ing.quantity * multiplier;
@@ -294,10 +879,17 @@ import "../styles/recipe.scss";
                             if (conversion) {
                                 displayQuantity = conversion.quantity;
                                 displayUnit = conversion.unit;
+                                displayQuantity = formatQuantity(
+                                    displayQuantity as number
+                                );
+                            } else {
+                                const formattedUS = formatUSVolume(
+                                    scaled,
+                                    displayUnit
+                                );
+                                displayQuantity = formattedUS.displayQuantity;
+                                displayUnit = formattedUS.displayUnit;
                             }
-                            displayQuantity = formatQuantity(
-                                displayQuantity as number
-                            );
                         } else if (currentUnitSystem === "us") {
                             const formattedUS = formatUSVolume(
                                 scaled,
@@ -306,18 +898,88 @@ import "../styles/recipe.scss";
                             displayQuantity = formattedUS.displayQuantity;
                             displayUnit = formattedUS.displayUnit;
                         } else {
-                            // Fallback
-                            displayQuantity = formatQuantity(scaled);
+                            // Fallback (e.g., metric selected but no density found)
+                            // We still want to show fractions for US volume units if we can
+                            const formattedUS = formatUSVolume(
+                                scaled,
+                                displayUnit
+                            );
+                            displayQuantity = formattedUS.displayQuantity;
+                            displayUnit = formattedUS.displayUnit;
                         }
 
-                        let text = `${displayQuantity}`;
+                        text = `${displayQuantity}`;
                         if (displayUnit) text += ` ${displayUnit}`;
                         if (ing.item) text += ` ${ing.item}`;
                         if (ing.preparation) text += `, ${ing.preparation}`;
-
-                        li.textContent = text;
                     } else {
-                        li.textContent = ing.rawText || ing.item;
+                        text = ing.rawText || ing.item;
+                    }
+
+                    if (
+                        ing.substituted &&
+                        typeof ing.substituted === "object"
+                    ) {
+                        // It's the new standard object format
+                        const sub = ing.substituted;
+                        let subText = "";
+
+                        if (
+                            sub.quantity !== null &&
+                            sub.quantity !== undefined
+                        ) {
+                            const subScaled = sub.quantity * multiplier;
+                            let subDispQuantity: number | string = subScaled;
+                            let subDispUnit = sub.unit;
+
+                            if (currentUnitSystem === "metric" && subDispUnit) {
+                                const conversion = convertVolumeToWeight(
+                                    sub.item,
+                                    subScaled,
+                                    subDispUnit
+                                );
+                                if (conversion) {
+                                    subDispQuantity = formatQuantity(
+                                        conversion.quantity as number
+                                    );
+                                    subDispUnit = conversion.unit;
+                                } else {
+                                    const formattedUS = formatUSVolume(
+                                        subScaled,
+                                        subDispUnit
+                                    );
+                                    subDispQuantity =
+                                        formattedUS.displayQuantity;
+                                    subDispUnit = formattedUS.displayUnit;
+                                }
+                            } else {
+                                const formattedUS = formatUSVolume(
+                                    subScaled,
+                                    subDispUnit
+                                );
+                                subDispQuantity = formattedUS.displayQuantity;
+                                subDispUnit = formattedUS.displayUnit;
+                            }
+
+                            subText = `${subDispQuantity}`;
+                            if (subDispUnit) subText += ` ${subDispUnit}`;
+                            if (sub.item) subText += ` ${sub.item}`;
+                            if (sub.preparation)
+                                subText += `, ${sub.preparation}`;
+                        } else {
+                            subText = sub.rawText || sub.item;
+                        }
+
+                        li.innerHTML = `<span style="text-decoration: line-through; opacity: 0.6; margin-right: 8px;">${text}</span>
+                                        <span>${subText}</span>
+                                        <button class="revert-sub btn icon-btn" data-index="${idx}" title="Remove substitution" style="margin-left: 8px; font-size: 0.8em; padding: 2px 5px;">&times;</button>`;
+                    } else if (typeof ing.substituted === "string") {
+                        // Backwards compatibility for old saved strings
+                        li.innerHTML = `<span style="text-decoration: line-through; opacity: 0.6; margin-right: 8px;">${text}</span>
+                                        <span>${ing.substituted}</span>
+                                        <button class="revert-sub btn icon-btn" data-index="${idx}" title="Remove substitution" style="margin-left: 8px; font-size: 0.8em; padding: 2px 5px;">&times;</button>`;
+                    } else {
+                        li.textContent = text;
                     }
 
                     ingredientsList.appendChild(li);

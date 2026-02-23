@@ -31,9 +31,62 @@ import SetupView from "../components/popup/SetupView.astro";
       const settingsBtn = document.getElementById("settings-btn");
       const closeSettingsBtn = document.getElementById("close-settings-btn");
 
-      function showSetup() {
+      async function showSetup() {
         mainView?.classList.add("hidden");
         setupView?.classList.remove("hidden");
+
+        // Auto-populate logic
+        if (typeof chrome !== "undefined" && chrome.storage) {
+          const data = await chrome.storage.local.get([
+            "plaintextApiKey",
+            "encryptedApiKey",
+            "llmProvider",
+            "llmModel",
+          ]);
+
+          const providerSelectEl = document.getElementById(
+            "provider-select"
+          ) as HTMLSelectElement;
+          const apiKeyInputEl = document.getElementById(
+            "api-key"
+          ) as HTMLInputElement;
+          const fetchBtnEl = document.getElementById("fetch-models-btn");
+          const modelStatusEl = document.getElementById("model-status");
+          const modelSelectEl = document.getElementById(
+            "model-select"
+          ) as HTMLSelectElement;
+
+          if (data.llmProvider && providerSelectEl) {
+            providerSelectEl.value = String(data.llmProvider);
+          }
+
+          if (data.plaintextApiKey || data.encryptedApiKey) {
+            if (apiKeyInputEl) {
+              apiKeyInputEl.value = "••••••••••••••••";
+              if (data.plaintextApiKey) {
+                apiKeyInputEl.dataset.realKey = String(data.plaintextApiKey);
+              } else {
+                delete apiKeyInputEl.dataset.realKey;
+              }
+              if (data.llmModel) {
+                const storedModel = String(data.llmModel);
+                apiKeyInputEl.dataset.storedModel = storedModel;
+                // Show it immediately if possible
+                if (modelSelectEl) {
+                  modelSelectEl.innerHTML = `<option value="${storedModel}">${storedModel}</option>`;
+                  modelSelectEl.value = storedModel;
+                }
+              }
+            }
+
+            if (data.plaintextApiKey && fetchBtnEl) {
+              fetchBtnEl.click();
+            } else if (data.encryptedApiKey && modelStatusEl) {
+              modelStatusEl.textContent =
+                "Encrypted key found. Enter a new key or fetch models manually (requires decrypting).";
+            }
+          }
+        }
       }
 
       function showMain() {
@@ -95,7 +148,10 @@ import SetupView from "../components/popup/SetupView.astro";
 
         // Scroll to bottom
         setTimeout(() => {
-          statusViewport.scrollTop = statusScroller.scrollHeight;
+          statusViewport.scrollTo({
+            top: statusScroller.scrollHeight,
+            behavior: "smooth",
+          });
         }, 50);
 
         if (isError && errorContainer && errorDetails) {
@@ -266,7 +322,7 @@ import SetupView from "../components/popup/SetupView.astro";
             if (tab && tab.id) {
               const response = await chrome.runtime.sendMessage({
                 type: "GET_EXTRACTION_STATUS",
-                tabId: tab.id,
+                url: tab.url,
               });
               if (response && response.isActive) {
                 // Restore UI
@@ -348,6 +404,7 @@ import SetupView from "../components/popup/SetupView.astro";
         chrome.runtime.sendMessage({
           type: "START_EXTRACTION",
           tabId: tab.id,
+          url: tab.url,
           apiKey,
           llmModel,
           llmProvider,
@@ -374,8 +431,20 @@ import SetupView from "../components/popup/SetupView.astro";
       ) as HTMLInputElement;
 
       fetchModelsBtn?.addEventListener("click", async () => {
-        const apiKey = settingsApiKeyInput?.value;
+        let apiKey = settingsApiKeyInput?.value;
         const provider = providerSelect.value;
+
+        if (apiKey === "••••••••••••••••") {
+          if (settingsApiKeyInput?.dataset.realKey) {
+            apiKey = settingsApiKeyInput.dataset.realKey;
+          } else {
+            if (modelStatus)
+              modelStatus.textContent =
+                "Cannot auto-fetch with encrypted key. Please enter your API Key.";
+            return;
+          }
+        }
+
         if (!apiKey) {
           if (modelStatus)
             modelStatus.textContent = "Please enter an API Key first.";
@@ -479,6 +548,21 @@ import SetupView from "../components/popup/SetupView.astro";
           });
 
           modelSelect.disabled = false;
+
+          if (settingsApiKeyInput?.dataset.storedModel) {
+            const storedModel = settingsApiKeyInput.dataset.storedModel;
+            if (availableModels.some((m) => m.id === storedModel)) {
+              modelSelect.value = storedModel;
+            } else {
+              // Add it just in case it's a custom or older model
+              const option = document.createElement("option");
+              option.value = storedModel;
+              option.textContent = `${storedModel} (Stored)`;
+              modelSelect.appendChild(option);
+              modelSelect.value = storedModel;
+            }
+          }
+
           if (modelStatus)
             modelStatus.textContent = "Models loaded successfully!";
           if (fetchModelsBtn) {
@@ -501,11 +585,21 @@ import SetupView from "../components/popup/SetupView.astro";
 
       finishBtn?.addEventListener("click", async () => {
         const password = encryptionPasswordInput.value;
-        const apiKey = settingsApiKeyInput.value;
+        const inputKey = settingsApiKeyInput.value;
+        let apiKey = inputKey;
+
+        if (inputKey === "••••••••••••••••") {
+          if (settingsApiKeyInput.dataset.realKey) {
+            apiKey = settingsApiKeyInput.dataset.realKey;
+          } else {
+            apiKey = ""; // It's an encrypted key, we just won't update it
+          }
+        }
+
         const modelSelection = modelSelect.value;
         const providerSelection = providerSelect.value;
 
-        if (!apiKey) {
+        if (!inputKey) {
           if (modelStatus) {
             modelStatus.innerHTML =
               "<span style='color:red'>Please enter an API Key.</span>";
@@ -539,6 +633,9 @@ import SetupView from "../components/popup/SetupView.astro";
               storageData.plaintextApiKey = apiKey;
               await chrome.storage.local.remove(["encryptedApiKey"]);
             }
+          } else if (inputKey === "••••••••••••••••") {
+            // we are keeping the existing key (presumably encrypted without password provided just now)
+            // so we don't modify plaintextApiKey or encryptedApiKey in storageData
           }
 
           await chrome.storage.local.set(storageData);

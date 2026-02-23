@@ -1,24 +1,14 @@
-# Scaffolding the Astro Extension
+# Plan for "Ask for Substitution" Feature
 
-This plan outlines the initialization of an empty Astro project tailored for a Chrome extension, setting up SCSS for styling, and creating the necessary UI components for the action panel, onboarding flow, and dashboard.
+## 1. Goal
+Implement backend LLM prompting and background worker status updates for the "Ask for substitution" chat interface in the recipe page.
 
-## Overview of Changes
+## 2. Changes Needed
+- **`src/utils/parser.ts`**: Create a new function `askSubstitutionLLM` (or similar) that takes the current recipe JSON and the user's prompt (e.g. "Substitute egg"). The single prompt needs to ask the model to analyze the chemical role of the target ingredient, and output a mathematically adjusted substitution, returning a simple response containing the thought process and the final substitution. 
+- **`src/background.ts`**: Add a message listener for `ASK_SUBSTITUTION`. The logic will be similar to `executeExtractionInBackground`: post status updates ("Analyzing chemical role...", "Calculating mathematically adjusted substitution...", etc.), call the LLM, and return the result.
+- **`src/pages/recipe.astro`**: Add event listeners for the chat input. Display status messages dynamically while loading, and then display the final result.
 
-1. **Astro Initialization:**
-   - Execute `pnpm create astro@latest . --template minimal --no-git` in the root folder.
-   - Install SCSS support with `pnpm add -D sass`.
-
-2. **Astro Configuration (`astro.config.mjs`):**
-   - Update `build.format` to `'file'` to output exact `popup.html`, `setup.html`, and `pantry.html` files needed for Chrome Extension routing (preventing Astro from generating `popup/index.html` structure).
-
-3. **Core Entry Files:**
-   - `src/pages/popup.astro`: The Action Panel HTML skeleton.
-   - `src/pages/setup.astro`: The Onboarding Flow HTML skeleton.
-   - `src/pages/pantry.astro`: The internal Dashboard HTML skeleton.
-
-4. **Styling and Layout Architecture:**
-   - `src/styles/global.scss`: Defines global variables, typography choices (serif-heavy aesthetic using modern clean rules), and dark/light color palettes.
-   - Ensure styling is modular to avoid CSS bleed during content script injection (if we later use popup styling in content paths).
-
-## User Review
-Please review this approach. If it sounds correct, I will execute the commands to scaffold the project, set up the pages, and output the directory tree.
+## 3. Reflect & Safety
+- Ensure `Readability.js` isn't used here since we already have the `recipe.json` object.
+- Ensure status updates match the `EXTRACTION_STATUS_UPDATE` pattern natively used by the popup, but since the user is in the `recipe.astro` page, `recipe.astro` will receive these messages and display them in the chat UI.
+- Use `chrome.runtime.sendMessage` and listener.
