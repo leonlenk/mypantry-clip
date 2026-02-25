@@ -1,0 +1,223 @@
+---
+import "../styles/global.scss";
+import { Coffee, Key, Download } from "@lucide/astro";
+---
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Pantry Clip - Setup</title>
+        <style>
+            body {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                min-height: 100vh;
+                background-color: var(--color-surface);
+            }
+            .setup-card {
+                max-width: 480px;
+                width: 100%;
+                text-align: center;
+                padding: var(--spacing-xl);
+            }
+            .brand-title {
+                font-family: var(--font-serif);
+                color: var(--color-primary);
+                font-size: 2.5rem;
+                margin-bottom: var(--spacing-xs);
+                letter-spacing: -0.02em;
+            }
+            .brand-subtitle {
+                color: var(--color-text-muted);
+                font-size: 1.1rem;
+                margin-bottom: var(--spacing-xl);
+            }
+
+            .view-state {
+                display: none;
+                animation: fadeIn 0.3s ease-in-out;
+            }
+
+            .view-state.active {
+                display: block;
+            }
+
+            @keyframes fadeIn {
+                from {
+                    opacity: 0;
+                    transform: translateY(5px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+
+            .btn.google {
+                width: 100%;
+                padding: 12px;
+                background: white;
+                color: #444;
+                border: 1px solid #ddd;
+                font-size: 1rem;
+                margin-bottom: var(--spacing-md);
+            }
+
+            .btn.google:hover {
+                background: #f8f8f8;
+            }
+
+            .btn.byok {
+                width: 100%;
+                padding: 12px;
+                font-size: 1rem;
+                border: 1px solid var(--color-accent);
+            }
+
+            .provider-divider {
+                display: flex;
+                align-items: center;
+                text-align: center;
+                margin: var(--spacing-md) 0;
+                color: var(--color-text-meta);
+            }
+
+            .provider-divider::before,
+            .provider-divider::after {
+                content: "";
+                flex: 1;
+                border-bottom: 1px solid var(--color-border);
+            }
+
+            .provider-divider:not(:empty)::before {
+                margin-right: 0.25em;
+            }
+
+            .provider-divider:not(:empty)::after {
+                margin-left: 0.25em;
+            }
+
+            /* Progress Bar Styles */
+            .progress-container {
+                width: 100%;
+                height: 8px;
+                background-color: var(--color-border);
+                border-radius: var(--radius-pill);
+                overflow: hidden;
+                margin: var(--spacing-md) 0;
+            }
+
+            .progress-fill {
+                height: 100%;
+                background-color: var(--color-accent);
+                width: 0%;
+                transition: width 0.2s ease-out;
+            }
+        </style>
+    </head>
+    <body>
+        <main class="card setup-card">
+            <h1 class="brand-title">Pantry Clip</h1>
+            <p class="brand-subtitle">Your intelligent recipe vault</p>
+
+            <!-- STATE 1: ONBOARDING / LOGIN -->
+            <section id="step-login" class="view-state active">
+                <p style="margin-bottom: var(--spacing-lg);">
+                    Sign in to sync your recipes across devices, or provide your
+                    own API key to run fully local.
+                </p>
+
+                <button id="btn-oauth-google" class="btn google">
+                    <svg
+                        style="margin-right: 8px; width:18px; height:18px;"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            fill="#4285F4"
+                            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                        ></path>
+                        <path
+                            fill="#34A853"
+                            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                        ></path>
+                        <path
+                            fill="#FBBC05"
+                            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                        ></path>
+                        <path
+                            fill="#EA4335"
+                            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                        ></path>
+                    </svg>
+                    Continue with Google
+                </button>
+
+                <div class="provider-divider">OR</div>
+
+                <button id="btn-show-byok" class="btn outline byok">
+                    <Key size={18} />
+                    Bring Your Own Key
+                </button>
+
+                <div id="byok-form" class="hidden mt" style="text-align: left;">
+                    <input
+                        type="password"
+                        id="input-api-key"
+                        placeholder="Enter Gemini API Key..."
+                    />
+                    <button
+                        id="btn-submit-byok"
+                        class="btn primary mt"
+                        style="width: 100%;">Save Key</button
+                    >
+                </div>
+            </section>
+
+            <!-- STATE 2: DOWNLOADING AI MODEL -->
+            <section id="step-downloading" class="view-state">
+                <Download
+                    size={48}
+                    color="var(--color-accent)"
+                    style="margin-bottom: 1rem;"
+                />
+                <h2>Initializing Local AI...</h2>
+                <p class="text-meta" style="margin-bottom: 2rem;">
+                    Downloading the vectorization engine (22MB). This only
+                    happens once and ensures your data stays completely private.
+                </p>
+
+                <div class="progress-container">
+                    <div id="progress-bar-fill" class="progress-fill"></div>
+                </div>
+                <p
+                    id="progress-text"
+                    style="font-size: 0.9rem; font-weight: 500;"
+                >
+                    0%
+                </p>
+            </section>
+
+            <!-- STATE 3: READY -->
+            <section id="step-ready" class="view-state">
+                <Coffee
+                    size={48}
+                    color="var(--color-accent)"
+                    style="margin-bottom: 1rem;"
+                />
+                <h2>You're all set!</h2>
+                <p>
+                    Pantry Clip is ready. You can now close this tab, pin the
+                    extension to your toolbar, and start saving recipes!
+                </p>
+                <button id="btn-close-tab" class="btn outline mt"
+                    >Close Tab</button
+                >
+            </section>
+        </main>
+
+        <script src="../utils/setup.ts"></script>
+    </body>
+</html>

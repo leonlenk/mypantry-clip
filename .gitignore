@@ -2,9 +2,12 @@
 dist/
 # generated types
 .astro/
+*.log
 
 # dependencies
 node_modules/
+.venv/
+__pycache__/
 
 # logs
 npm-debug.log*

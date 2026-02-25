@@ -299,7 +299,22 @@ async function executeSubstitutionInBackground(tabId: number, recipeData: any, u
 }
 
 
+chrome.runtime.onInstalled.addListener((details) => {
+    if (details.reason === chrome.runtime.OnInstalledReason.INSTALL) {
+        chrome.tabs.create({ url: chrome.runtime.getURL("setup.html") });
+    }
+});
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.type === 'INIT_MODEL_DOWNLOAD') {
+        (async () => {
+            await setupOffscreenDocument();
+            const res = await chrome.runtime.sendMessage({ type: "INIT_MODEL_DOWNLOAD", target: "offscreen" });
+            sendResponse(res);
+        })();
+        return true;
+    }
+
     if (message.type === 'GENERATE_EMBEDDING') {
         (async () => {
             // this handles requests from other parts of the extension that aren't the background extraction

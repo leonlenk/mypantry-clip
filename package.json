@@ -2,6 +2,7 @@
     "name": "ai-recipes-monorepo",
     "private": true,
     "scripts": {
+        "dev:api": "cd apps/api && uv run uvicorn main:app --reload --port 8000",
         "dev:extension": "pnpm --filter recipe-ai dev",
         "build:extension": "pnpm --filter recipe-ai build",
         "test:firefox": "pnpm --filter recipe-ai test:firefox",

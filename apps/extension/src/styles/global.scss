@@ -1,18 +1,26 @@
 @use 'components';
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Quicksand:wght@400;500;600&display=swap');
 
 :root {
-  --font-serif: 'Playfair Display', serif;
-  --font-sans: 'Inter', sans-serif;
+  --font-serif: 'Fraunces', serif;
+  --font-sans: 'Quicksand', sans-serif;
 
-  // Minimal elegant color palette
-  --color-bg: #fdfbf7;
-  --color-surface: #ffffff;
-  --color-border: #e6e2d8;
-  --color-text: #1c1a17;
-  --color-text-muted: #6b665c;
-  --color-accent: #8b7355;
-  --color-accent-hover: #705b41;
+  // NYT Cooking elegant color palette
+  --color-bg: #FDFBF7;
+  /* Vanilla Cream */
+  --color-surface: #F4EFE6;
+  /* Almond */
+  --color-border: #E8E3D9;
+  /* Oat Milk */
+  --color-text: #4A4036;
+  /* Espresso (Primary text) */
+  --color-text-muted: #6B5E50;
+  /* Warm Taupe – darkened for legibility */
+  --color-text-meta: #9E8E7D;
+  /* Pale Latte – darkened for legibility */
+  --color-accent: #C8916F;
+  /* Warm Apricot – darkened for legibility */
+  --color-accent-hover: #B5805F;
 
   --spacing-xs: 0.25rem;
   --spacing-sm: 0.5rem;
@@ -24,19 +32,20 @@
   --radius-md: 8px;
   --radius-lg: 12px;
 
-  --shadow-sm: 0 2px 4px rgba(28, 26, 23, 0.05);
-  --shadow-md: 0 4px 12px rgba(28, 26, 23, 0.08);
+  --shadow-sm: 0 2px 4px rgba(74, 64, 54, 0.05);
+  --shadow-md: 0 4px 12px rgba(74, 64, 54, 0.08);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-bg: #121212;
-    --color-surface: #1e1e1e;
-    --color-border: #333333;
-    --color-text: #e0e0e0;
-    --color-text-muted: #a0a0a0;
-    --color-accent: #c4a984;
-    --color-accent-hover: #d2bba0;
+    --color-bg: #1A1714;
+    --color-surface: #24201C;
+    --color-border: #3A342D;
+    --color-text: #E8E3D9;
+    --color-text-muted: #C4B8A8;
+    --color-text-meta: #8A7D6E;
+    --color-accent: #C48E72;
+    --color-accent-hover: #D59F83;
     --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
   }
@@ -97,21 +106,28 @@ button,
   color: var(--color-text);
   cursor: pointer;
   transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
 
   &:hover {
     background-color: var(--color-bg);
     border-color: var(--color-accent);
-    color: var(--color-accent);
+    color: var(--color-text);
   }
 
   &.primary {
     background-color: var(--color-accent);
-    color: #fff;
+    color: #2F261F;
+    /* Very dark espresso for high contrast against apricot */
     border-color: var(--color-accent);
+    font-weight: 600;
 
     &:hover {
       background-color: var(--color-accent-hover);
       border-color: var(--color-accent-hover);
+      color: #2F261F;
     }
   }
 }
@@ -146,4 +162,13 @@ select {
     outline: none;
     border-color: var(--color-accent);
   }
+}
+
+.hidden {
+  display: none !important;
+}
+
+.text-meta {
+  color: var(--color-text-meta);
+  font-size: 0.85rem;
 }

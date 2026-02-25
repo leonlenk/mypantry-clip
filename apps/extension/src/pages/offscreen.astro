@@ -33,7 +33,17 @@
                     extractor = await pipeline(
                         "feature-extraction",
                         "Xenova/all-MiniLM-L6-v2",
-                        { quantized: true }
+                        {
+                            quantized: true,
+                            progress_callback: (info) => {
+                                chrome.runtime
+                                    .sendMessage({
+                                        type: "DOWNLOAD_PROGRESS",
+                                        ...info,
+                                    })
+                                    .catch(() => {});
+                            },
+                        }
                     );
                 }
                 return extractor;
@@ -42,6 +52,21 @@
             // Listen for embedding requests from the background service worker
             chrome.runtime.onMessage.addListener(
                 (message, _sender, sendResponse) => {
+                    if (
+                        message.type === "INIT_MODEL_DOWNLOAD" &&
+                        message.target === "offscreen"
+                    ) {
+                        getExtractor()
+                            .then(() => sendResponse({ success: true }))
+                            .catch((error) =>
+                                sendResponse({
+                                    success: false,
+                                    error: error.message,
+                                })
+                            );
+                        return true;
+                    }
+
                     if (
                         message.type !== "GENERATE_EMBEDDING" ||
                         message.target !== "offscreen"

@@ -348,18 +348,21 @@ import "../styles/recipe.scss";
                         [
                             "plaintextApiKey",
                             "encryptedApiKey",
+                            "supabaseToken",
                             "llmModel",
                             "llmProvider",
                         ],
                         async (res: {
                             plaintextApiKey?: string;
                             encryptedApiKey?: string;
+                            supabaseToken?: string;
                             llmModel?: string;
                             llmProvider?: string;
                         }) => {
                             const {
                                 plaintextApiKey,
                                 encryptedApiKey,
+                                supabaseToken,
                                 llmModel,
                                 llmProvider,
                             } = res;
@@ -372,13 +375,13 @@ import "../styles/recipe.scss";
                                 llmModel
                             );
 
-                            let apiKey = plaintextApiKey;
+                            let apiKey = supabaseToken || plaintextApiKey;
 
                             if (!apiKey) {
                                 if (encryptedApiKey) {
                                     if (subStatusText)
                                         subStatusText.textContent =
-                                            "Error: API key is encrypted. Please disable master password in setup to use substitutions.";
+                                            "Error: API key is encrypted. Please enter your master password in the extension popup first to unlock it.";
                                     return;
                                 }
                                 console.error(

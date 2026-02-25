@@ -311,7 +311,68 @@ Extract the recipe into the specified JSON format.
     let fetchHeaders: Record<string, string> = {};
     let fetchBody: any = {};
 
-    if (provider === "openrouter") {
+    if (provider === "google") {
+        // Cloud Mode: Proxy through our FastAPI backend
+        fetchUrl = "http://127.0.0.1:8000/api/extract/";
+        fetchHeaders = {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${apiKey}`
+        };
+        // For our backend, we send the raw payload (jsonLd or textContent)
+        const payload = extractedData.source === "json-ld"
+            ? JSON.stringify(extractedData.jsonLd)
+            : (extractedData.source === "dom-target" ? extractedData.recipeText : (extractedData as any).textContent);
+
+        fetchBody = { payload };
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 120000);
+
+        try {
+            const response = await fetch(fetchUrl, {
+                method: "POST",
+                headers: fetchHeaders,
+                body: JSON.stringify(fetchBody),
+                signal: controller.signal
+            });
+
+            if (!response.ok) {
+                const errText = await response.text();
+                throw new Error(`Cloud API Error (${response.status}): ${errText}`);
+            }
+
+            const cloudData = await response.json();
+            // Map backend Recipe model to extension Recipe model
+            // Backend: title, description, prepTime, cookTime, servings, ingredients (name, amount, unit), instructions (strings)
+            const recipeData: Recipe = {
+                id: Math.random().toString(36).substring(7),
+                url,
+                title: cloudData.recipe.title,
+                description: cloudData.recipe.description,
+                prepTimeMinutes: parseInt(cloudData.recipe.prepTime) || undefined,
+                cookTimeMinutes: parseInt(cloudData.recipe.cookTime) || undefined,
+                servings: cloudData.recipe.servings,
+                ingredients: cloudData.recipe.ingredients.map((ing: any) => ({
+                    rawText: `${ing.amount} ${ing.unit} ${ing.name}`,
+                    quantity: ing.amount,
+                    unit: ing.unit,
+                    item: ing.name
+                })),
+                instructions: cloudData.recipe.instructions.map((text: string, idx: number) => ({
+                    stepNumber: idx + 1,
+                    text
+                }))
+            };
+            return { recipeData, payloadCharCount: payload.length };
+        } catch (error: any) {
+            if (error.name === 'AbortError') {
+                throw new Error(`Cloud API request timed out after 120s.`);
+            }
+            throw error;
+        } finally {
+            clearTimeout(timeoutId);
+        }
+    } else if (provider === "openrouter") {
         fetchUrl = "https://openrouter.ai/api/v1/chat/completions";
         fetchHeaders = {
             "Content-Type": "application/json",
@@ -468,7 +529,69 @@ Provide the precise JSON response.
     let fetchHeaders: Record<string, string> = {};
     let fetchBody: any = {};
 
-    if (provider === "openrouter") {
+    if (provider === "google") {
+        fetchUrl = "http://127.0.0.1:8000/api/substitute/";
+        fetchHeaders = {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${apiKey}`,
+        };
+        fetchBody = {
+            recipe_context: recipeData,
+            target_ingredient: userPrompt
+        };
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 60000);
+
+        try {
+            const response = await fetch(fetchUrl, {
+                method: "POST",
+                headers: fetchHeaders,
+                body: JSON.stringify(fetchBody),
+                signal: controller.signal
+            });
+
+            if (!response.ok) {
+                const errText = await response.text();
+                throw new Error(`Cloud API Error (${response.status}): ${errText}`);
+            }
+
+            const cloudData = await response.json();
+            // Map backend Substitution model to extension result
+            // Backend: target_ingredient, substitution_name, amount, unit, reasoning
+            const result = {
+                thoughtProcess: cloudData.substitution.reasoning,
+                substitutions: [
+                    {
+                        ingredientId: -1, // We'll have to find it or let LLM return it later, for now we just show it
+                        quantity: cloudData.substitution.amount,
+                        unit: cloudData.substitution.unit,
+                        item: cloudData.substitution.substitution_name,
+                        preparation: null,
+                        rawText: `${cloudData.substitution.amount} ${cloudData.substitution.unit} ${cloudData.substitution.substitution_name}`
+                    }
+                ]
+            };
+
+            // Try to fuzzy match find the ingredient ID if possible
+            const targetLower = cloudData.substitution.target_ingredient.toLowerCase();
+            const foundIdx = recipeData.ingredients.findIndex(ing =>
+                ing.item.toLowerCase().includes(targetLower) || targetLower.includes(ing.item.toLowerCase())
+            );
+            if (foundIdx !== -1) {
+                result.substitutions[0].ingredientId = foundIdx;
+            }
+
+            return result;
+        } catch (error: any) {
+            if (error.name === 'AbortError') {
+                throw new Error(`Cloud API request timed out after 60s.`);
+            }
+            throw error;
+        } finally {
+            clearTimeout(timeoutId);
+        }
+    } else if (provider === "openrouter") {
         fetchUrl = "https://openrouter.ai/api/v1/chat/completions";
         fetchHeaders = {
             "Content-Type": "application/json",

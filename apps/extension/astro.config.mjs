@@ -7,6 +7,7 @@ export default defineConfig({
   build: {
     format: 'file',
     assets: 'assets',
+    inlineStylesheets: 'never',
   },
   vite: {
     // Prevent Vite pre-bundling Transformers.js since it relies on WASM loaded at runtime
@@ -14,6 +15,7 @@ export default defineConfig({
       exclude: ["@xenova/transformers", "onnxruntime-web"],
     },
     build: {
+      assetsInlineLimit: 0,
       chunkSizeWarningLimit: 1500,
       rollupOptions: {
         onwarn(warning, warn) {

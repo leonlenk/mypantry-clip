@@ -1,0 +1,24 @@
+from fastapi import APIRouter, Depends, HTTPException
+from src.dependencies.auth import verify_jwt
+from src.dependencies.rate_limit import check_rate_limit_and_telemetry
+from src.services.llm import extract_recipe
+from pydantic import BaseModel
+from loguru import logger
+import traceback
+
+router = APIRouter(prefix="/api/extract", tags=["extract"])
+
+class ExtractRequest(BaseModel):
+    payload: str
+
+@router.post("/")
+def extract_endpoint(request: ExtractRequest, user_id: str = Depends(verify_jwt)):
+    """Extracts a recipe from raw HTML/JSON-LD. Rate limited."""
+    check_rate_limit_and_telemetry(user_id=user_id, endpoint="extract")
+    
+    try:
+        recipe = extract_recipe(request.payload)
+        return {"recipe": recipe.model_dump()}
+    except Exception as e:
+        logger.error(f"Extraction failed: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail="Failed to extract recipe")
