@@ -31,7 +31,7 @@ export function checkJsonLd(): ExtractionResult | null {
                 let text = el.innerText;
                 // Many blogs put the notes immediately after the recipe card wrapper
                 let next = el.nextElementSibling as HTMLElement;
-                while (next && text.length < 15000) {
+                while (next && text.length < 20000) {
                     text += "\n\n" + next.innerText;
                     next = next.nextElementSibling as HTMLElement;
                 }
@@ -97,7 +97,7 @@ export function extractDomTarget(): ExtractionResult | null {
             if (el) {
                 let text = el.innerText;
                 let next = el.nextElementSibling as HTMLElement;
-                while (next && text.length < 15000) {
+                while (next && text.length < 20000) {
                     text += "\n\n" + next.innerText;
                     next = next.nextElementSibling as HTMLElement;
                 }
@@ -380,7 +380,7 @@ Extract the recipe into the specified JSON format.
                     throw new Error("Session expired. Please sign out and sign in again to continue.");
                 }
                 if (response.status === 413) {
-                    throw new Error(`Payload too large. The page content exceeds 13,000 characters after cleanup. Try a page with a dedicated recipe card.`);
+                    throw new Error(`Payload too large. The page content exceeds 20,000 characters after cleanup. Try a page with a dedicated recipe card.`);
                 }
                 throw new Error(`Cloud API Error (${response.status}): ${errText}`);
             }
@@ -450,8 +450,8 @@ Extract the recipe into the specified JSON format.
         fetchHeaders = {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${apiKey}`,
-            "HTTP-Referer": typeof window !== "undefined" ? window.location.origin : (typeof chrome !== "undefined" && chrome.runtime ? chrome.runtime.getURL("") : "https://recipe-ai.extension"),
-            "X-Title": "Recipe AI"
+            "HTTP-Referer": typeof window !== "undefined" ? window.location.origin : (typeof chrome !== "undefined" && chrome.runtime ? chrome.runtime.getURL("") : "https://pantry-clip.extension"),
+            "X-Title": "Pantry Clip"
         };
         fetchBody = {
             model: model,
@@ -681,8 +681,8 @@ Provide the precise JSON response.
         fetchHeaders = {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${apiKey}`,
-            "HTTP-Referer": typeof window !== "undefined" ? window.location.origin : (typeof chrome !== "undefined" && chrome.runtime ? chrome.runtime.getURL("") : "https://recipe-ai.extension"),
-            "X-Title": "Recipe AI"
+            "HTTP-Referer": typeof window !== "undefined" ? window.location.origin : (typeof chrome !== "undefined" && chrome.runtime ? chrome.runtime.getURL("") : "https://pantry-clip.extension"),
+            "X-Title": "Pantry Clip"
         };
         fetchBody = {
             model: model,

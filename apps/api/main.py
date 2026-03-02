@@ -2,13 +2,13 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from src.utils.logger import setup_logging
 from src.config import settings
-from src.routers import extract, substitute, auth
+from src.routers import extract, substitute, auth, sync
 from loguru import logger
 import uvicorn
 
 setup_logging()
 
-app = FastAPI(title="Recipe AI Cloud API")
+app = FastAPI(title="MyPantry Cloud API")
 
 @app.on_event("startup")
 def startup_event():
@@ -31,11 +31,12 @@ app.add_middleware(
 
 app.include_router(extract.router)
 app.include_router(substitute.router)
+app.include_router(sync.router)
 app.include_router(auth.router, prefix="/oauth", tags=["oauth"])
 
 @app.get("/")
 def read_root():
-    return {"message": "Welcome to the Recipe AI Cloud API."}
+    return {"message": "Welcome to the MyPantry Cloud API."}
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

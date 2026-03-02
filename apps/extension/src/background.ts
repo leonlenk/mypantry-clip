@@ -2,7 +2,8 @@
 // Service worker for the extension
 
 import { checkJsonLd, extractDomTarget, extractWithReadability, extractRecipeWithClaude, askSubstitutionWithClaude } from "./utils/parser";
-import { saveRecipeLocally } from "./utils/db";
+import { syncRecipeToCloud, deleteRecipeFromCloud, syncAllFromCloud, getCloudLatestTimestamp } from './utils/sync';
+import { saveRecipeLocally, getRecipe, getAllRecipes } from "./utils/db";
 
 let creating: Promise<void> | null;
 
@@ -113,16 +114,26 @@ async function refreshSupabaseToken(): Promise<string | null> {
 
     console.log("[Auth] Token is missing or expiring soon. Attempting refresh...");
 
-    if (!supabaseAnonKey) {
-        // Anon key missing from storage — could happen for users who installed before it was persisted.
-        // Throw a clear error so the user sees a helpful message rather than a cryptic crash.
+    // The anon key is a public, non-secret credential. We bake it in at build time as a safe fallback
+    // for MV3 service-worker restarts where chrome.storage hasn't been written yet (popup not opened).
+    const builtInAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY as string | undefined;
+    const resolvedAnonKey = supabaseAnonKey || builtInAnonKey;
+
+    if (!resolvedAnonKey) {
+        // Anon key is missing from both storage and the build — user must re-authenticate.
         throw new Error("Session expired. Please sign out and sign in again to refresh your credentials.");
+    }
+
+    // Persist the key so subsequent calls don't need to fall back to the build-time value.
+    if (!supabaseAnonKey && resolvedAnonKey) {
+        await chrome.storage.local.set({ supabaseAnonKey: resolvedAnonKey });
+        console.log("[Auth] Persisted missing supabaseAnonKey from build-time env to chrome.storage.");
     }
 
     try {
         const res = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=refresh_token`, {
             method: "POST",
-            headers: { "Content-Type": "application/json", "apikey": supabaseAnonKey },
+            headers: { "Content-Type": "application/json", "apikey": resolvedAnonKey },
             body: JSON.stringify({ refresh_token: refreshToken }),
         });
 
@@ -227,9 +238,9 @@ async function executeExtractionInBackground(url: string, tabId: number, apiKey:
         }
 
         await updateExtractionStatus(url, tabId, "Extracting page content...");
-        console.log(`[Recipe AI] Starting background extraction for ${url} (tab ${tabId}) with ${llmProvider} model: ${llmModel}`);
+        console.log(`[MyPantry] Starting background extraction for ${url} (tab ${tabId}) with ${llmProvider} model: ${llmModel}`);
 
-        console.log("[Recipe AI] Tier 1: Checking for JSON-LD schema...");
+        console.log("[MyPantry] Tier 1: Checking for JSON-LD schema...");
         let results = await chrome.scripting.executeScript({
             target: { tabId },
             func: checkJsonLd,
@@ -238,7 +249,7 @@ async function executeExtractionInBackground(url: string, tabId: number, apiKey:
         let extractedData = results?.[0]?.result;
 
         if (!extractedData) {
-            console.log("[Recipe AI] JSON-LD failed. Tier 2: Extracting targeted DOM recipe card...");
+            console.log("[MyPantry] JSON-LD failed. Tier 2: Extracting targeted DOM recipe card...");
             await updateExtractionStatus(url, tabId, "Hunting for recipe card on page...");
 
             results = await chrome.scripting.executeScript({
@@ -250,7 +261,7 @@ async function executeExtractionInBackground(url: string, tabId: number, apiKey:
         }
 
         if (!extractedData) {
-            console.log("[Recipe AI] Targeted DOM extraction failed. Tier 3: Injecting Readability fallback...");
+            console.log("[MyPantry] Targeted DOM extraction failed. Tier 3: Injecting Readability fallback...");
             await updateExtractionStatus(url, tabId, "Loading entire page context (slower)...");
 
             await chrome.scripting.executeScript({
@@ -258,7 +269,7 @@ async function executeExtractionInBackground(url: string, tabId: number, apiKey:
                 files: ["Readability.js"],
             });
 
-            console.log("[Recipe AI] Executing Readability extraction...");
+            console.log("[MyPantry] Executing Readability extraction...");
             results = await chrome.scripting.executeScript({
                 target: { tabId },
                 func: extractWithReadability,
@@ -275,15 +286,15 @@ async function executeExtractionInBackground(url: string, tabId: number, apiKey:
 
         if (extractedData.source === "json-ld") {
             const hasText = !!extractedData.recipeText;
-            console.log(`[Recipe AI] JSON-LD schema found (Contains dom text? ${hasText})`);
+            console.log(`[MyPantry] JSON-LD schema found (Contains dom text? ${hasText})`);
             await updateExtractionStatus(url, tabId, "Analyzing structured recipe data...", false, false, recipeTitle);
         } else if (extractedData.source === "dom-target") {
-            console.log(`[Recipe AI] Extracted recipe card only`, `Text length: ${extractedData.recipeText?.length ?? 0} chars.`);
+            console.log(`[MyPantry] Extracted recipe card only`, `Text length: ${extractedData.recipeText?.length ?? 0} chars.`);
             const charCount = extractedData.recipeText?.length ?? 0;
             const formattedCount = new Intl.NumberFormat().format(charCount);
             await updateExtractionStatus(url, tabId, `Processing localized recipe card (${formattedCount} chars)...`, false, false, recipeTitle);
         } else {
-            console.log("[Recipe AI] Used comprehensive Readability fallback.", `Text length: ${extractedData.textContent?.length ?? 0} chars.`);
+            console.log("[MyPantry] Used comprehensive Readability fallback.", `Text length: ${extractedData.textContent?.length ?? 0} chars.`);
             const charCount = extractedData.textContent?.length ?? 0;
             const formattedCount = new Intl.NumberFormat().format(charCount);
             if (charCount > 10000) {
@@ -303,7 +314,7 @@ async function executeExtractionInBackground(url: string, tabId: number, apiKey:
         const approxTokens = Math.ceil(approxPayloadCharCount / 4);
         const formattedPayloadCount = new Intl.NumberFormat().format(approxTokens);
 
-        console.log("[Recipe AI] Sending request to LLM API...");
+        console.log("[MyPantry] Sending request to LLM API...");
         await updateExtractionStatus(url, tabId, `Asking ${llmProvider} to process ~${formattedPayloadCount} tokens...`);
 
         const { recipeData } = await extractRecipeWithClaude(
@@ -317,7 +328,7 @@ async function executeExtractionInBackground(url: string, tabId: number, apiKey:
         await updateExtractionStatus(url, tabId, "Successfully extracted recipe data!");
 
         await updateExtractionStatus(url, tabId, "Generating embedding vector...");
-        console.log("[Recipe AI] Requesting embedding...");
+        console.log("[MyPantry] Requesting embedding...");
 
         const textToEmbed = [
             recipeData.title,
@@ -335,16 +346,16 @@ async function executeExtractionInBackground(url: string, tabId: number, apiKey:
         });
 
         if (embeddingResult && embeddingResult.success && embeddingResult.embedding) {
-            console.log(`[Recipe AI] Embedding generated (${embeddingResult.embedding.length} dims).`);
+            console.log(`[MyPantry] Embedding generated (${embeddingResult.embedding.length} dims).`);
             recipeData.embedding = embeddingResult.embedding;
         } else {
-            console.warn("[Recipe AI] Embedding failed, saving without vector:", embeddingResult?.error);
+            console.warn("[MyPantry] Embedding failed, saving without vector:", embeddingResult?.error);
         }
 
         await updateExtractionStatus(url, tabId, "Saving to local database...");
-        console.log("[Recipe AI] Saving recipe to IndexedDB...");
+        console.log("[MyPantry] Saving recipe to IndexedDB...");
         await saveRecipeLocally(recipeData);
-        console.log("[Recipe AI] Saved to IndexedDB successfully.");
+        console.log("[MyPantry] Saved to IndexedDB successfully.");
 
         await updateExtractionStatus(url, tabId, "Recipe saved! Open Pantry to view.", false, true);
     } catch (error: any) {
@@ -430,6 +441,15 @@ chrome.runtime.onInstalled.addListener((details) => {
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.type === 'CHECK_MODEL_CACHED') {
+        (async () => {
+            await setupOffscreenDocument();
+            const res = await chrome.runtime.sendMessage({ type: "CHECK_MODEL_CACHED", target: "offscreen" });
+            sendResponse(res);
+        })();
+        return true;
+    }
+
     if (message.type === 'INIT_MODEL_DOWNLOAD') {
         (async () => {
             await setupOffscreenDocument();
@@ -486,6 +506,76 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         // Don't await this, let it run in the background
         executeSubstitutionInBackground(tabId, recipeData, userPrompt, apiKey, llmModel, llmProvider);
         sendResponse({ success: true });
+        return true;
+    }
+
+    if (message.type === 'PUSH_ALL_LOCAL_TO_CLOUD') {
+        // Used during cold boot sync to push local recipes that were never
+        // synced to the cloud (e.g. saved before cloud sync was working).
+        (async () => {
+            try {
+                const localRecipes = await getAllRecipes();
+                let pushedCount = 0;
+                for (const recipe of localRecipes) {
+                    try {
+                        await syncRecipeToCloud(recipe);
+                        pushedCount++;
+                    } catch (err) {
+                        console.warn(`[Sync] Failed to push recipe '${recipe.id}':`, err);
+                    }
+                }
+                sendResponse({ success: true, pushed: pushedCount, total: localRecipes.length });
+            } catch (err: any) {
+                sendResponse({ success: false, error: err.message });
+            }
+        })();
+        return true;
+    }
+
+    if (message.type === 'GET_CLOUD_LATEST') {
+        // Cheap single-row query used by the pantry dashboard on open
+        // to decide whether a delta sync is needed.
+        (async () => {
+            try {
+                const latest = await getCloudLatestTimestamp();
+                sendResponse({ success: true, latest_updated_at: latest });
+            } catch (err: any) {
+                sendResponse({ success: false, error: err.message });
+            }
+        })();
+        return true;
+    }
+
+    if (message.type === 'SYNC_FROM_CLOUD') {
+        // Triggered by the pantry dashboard after detecting a cloud-ahead state.
+        // `message.since` is passed from the pantry's lastSyncAt so only new
+        // recipes are fetched — making repeated calls very cheap.
+        (async () => {
+            try {
+                const since = message.since as string | undefined;
+                const cloudRecipes = await syncAllFromCloud(since);
+                let mergedCount = 0;
+
+                for (const cloudRecipe of cloudRecipes) {
+                    const local = await getRecipe(cloudRecipe.id);
+                    const cloudTs = cloudRecipe.createdAt ?? 0;
+                    const localTs = local?.createdAt ?? 0;
+                    if (!local || cloudTs > localTs) {
+                        await saveRecipeLocally(cloudRecipe);
+                        mergedCount++;
+                    }
+                }
+
+                // Record this sync time for the next differential fetch
+                const syncedAt = new Date().toISOString();
+                await chrome.storage.local.set({ lastSyncAt: syncedAt });
+
+                sendResponse({ success: true, merged: mergedCount, total: cloudRecipes.length, syncedAt });
+            } catch (err: any) {
+                console.warn('[Sync] Manual sync failed:', err);
+                sendResponse({ success: false, error: err.message });
+            }
+        })();
         return true;
     }
 });

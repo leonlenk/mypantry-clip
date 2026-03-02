@@ -62,13 +62,17 @@ Payload:
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
                 response_schema=Recipe,
-                temperature=0.0
+                temperature=0.0,
+                # Disable thinking — gemini-2.5-flash enables it by default, which can produce
+                # an empty response.text when combined with response_schema constrained output.
+                thinking_config=types.ThinkingConfig(thinking_budget=0)
             )
         )
-        if response.text:
-            return Recipe.model_validate_json(response.text)
-        else:
-            raise ValueError("Empty response from LLM")
+        if not response.text:
+            # Log candidates for debug insight (safety blocks etc.)
+            finish_reason = response.candidates[0].finish_reason if response.candidates else "unknown"
+            raise ValueError(f"Empty response from LLM (finish_reason={finish_reason})")
+        return Recipe.model_validate_json(response.text)
     except Exception as e:
         logger.error(f"Error extracting recipe: {e}")
         raise
@@ -83,13 +87,14 @@ def get_substitution(recipe_context: dict, target_ingredient: str) -> Substituti
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
                 response_schema=Substitution,
-                temperature=0.2
+                temperature=0.2,
+                thinking_config=types.ThinkingConfig(thinking_budget=0)
             )
         )
-        if response.text:
-            return Substitution.model_validate_json(response.text)
-        else:
-            raise ValueError("Empty response from LLM")
+        if not response.text:
+            finish_reason = response.candidates[0].finish_reason if response.candidates else "unknown"
+            raise ValueError(f"Empty response from LLM (finish_reason={finish_reason})")
+        return Substitution.model_validate_json(response.text)
     except Exception as e:
         logger.error(f"Error getting substitution: {e}")
         raise

@@ -1,14 +1,22 @@
 {
-    "name": "ai-recipes-monorepo",
+    "name": "mypantry",
     "private": true,
     "scripts": {
         "dev:api": "cd apps/api && uv run uvicorn main:app --reload --port 8000",
-        "dev:extension": "pnpm --filter recipe-ai dev",
-        "build:extension": "pnpm --filter recipe-ai build",
-        "test:firefox": "pnpm --filter recipe-ai test:firefox",
-        "test:chromium": "pnpm --filter recipe-ai test:chromium"
+        "kill-api": "fuser -k 8000/tcp || true",
+        "restart-api": "pnpm kill-api && pnpm dev:api",
+        "dev:extension": "pnpm --filter mypantry dev",
+        "build:extension": "pnpm --filter mypantry build",
+        "test:firefox": "pnpm --filter mypantry test:firefox",
+        "test:chromium": "pnpm --filter mypantry test:chromium",
+        "db:push": "pnpm exec supabase db push",
+        "db:reset": "pnpm exec supabase db reset",
+        "db:status": "pnpm exec supabase status"
     },
     "engines": {
         "node": ">=18"
+    },
+    "devDependencies": {
+        "supabase": "^2.76.15"
     }
 }

@@ -1,4 +1,4 @@
-# Recipe AI: Secure Monorepo Browser Extension & API
+# MyPantry: Secure Monorepo Browser Extension & API
 
 ## 1. System Overview
 A privacy-first, hybrid-architecture recipe assistant. The project is structured as a monorepo containing a minimal-permission browser extension (client) and a rate-limited Python backend (cloud sync). It supports a "Bring Your Own Key" (BYOK) local mode and a freemium cloud-synced mode. Crucially, all vector embedding generation is handled via Edge AI on the client device to ensure zero-cost backend scaling.

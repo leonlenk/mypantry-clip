@@ -1,10 +1,10 @@
 {
     "manifest_version": 3,
-    "name": "Recipe AI",
+    "name": "Pantry Clip",
     "version": "0.1.0",
     "description": "Privacy-first browser extension for extracting and searching recipes.",
     "action": {
-        "default_title": "Recipe AI",
+        "default_title": "Pantry Clip",
         "default_popup": "popup.html",
         "default_icon": {
             "16": "icon-16.png",
@@ -19,9 +19,7 @@
     },
     "background": {
         "service_worker": "background.js",
-        "scripts": [
-            "background.js"
-        ]
+        "type": "module"
     },
     "permissions": [
         "activeTab",
@@ -29,6 +27,11 @@
         "storage",
         "offscreen",
         "identity"
+    ],
+    "host_permissions": [
+        "http://localhost:8000/*",
+        "http://127.0.0.1:8000/*",
+        "https://*.supabase.co/*"
     ],
     "content_security_policy": {
         "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"

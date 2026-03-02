@@ -10,7 +10,7 @@ import RecipeGrid from "../components/pantry/RecipeGrid.astro";
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Recipe AI - Pantry Dashboard</title>
+    <title>MyPantry - Dashboard</title>
   </head>
   <body>
     <div class="pantry-layout">
@@ -58,12 +58,59 @@ import RecipeGrid from "../components/pantry/RecipeGrid.astro";
           chrome.storage &&
           chrome.storage.local
         ) {
-          const { setupComplete } = await chrome.storage.local.get([
-            "setupComplete",
-          ]);
+          const { setupComplete, llmProvider } = await chrome.storage.local.get(
+            ["setupComplete", "llmProvider"]
+          );
           if (!setupComplete) {
             window.location.href = "setup.html";
             return;
+          }
+          // Remove old sync button visibility (button was removed)
+          // Dashboard-open check: silently fetch only recipes newer than lastSyncAt.
+          if (llmProvider === "google") {
+            // Run in the background — never block the pantry rendering
+            (async () => {
+              try {
+                const stored = await chrome.storage.local.get("lastSyncAt");
+                const lastSyncAt = stored.lastSyncAt as string | undefined;
+
+                // Ask the background worker for the cloud's latest updated_at (1 row)
+                const latestRes: {
+                  success: boolean;
+                  latest_updated_at: string | null;
+                } = await chrome.runtime.sendMessage({
+                  type: "GET_CLOUD_LATEST",
+                });
+
+                if (!latestRes.success || !latestRes.latest_updated_at) return;
+
+                // Only sync if cloud has something newer than our last sync
+                const cloudIsAhead =
+                  !lastSyncAt || latestRes.latest_updated_at > lastSyncAt;
+                if (!cloudIsAhead) return;
+
+                console.log(
+                  "[Pantry] Cloud is ahead of local — fetching delta..."
+                );
+                const syncRes: { success: boolean; merged: number } =
+                  await chrome.runtime.sendMessage({
+                    type: "SYNC_FROM_CLOUD",
+                    since: lastSyncAt,
+                  });
+
+                if (syncRes.success && syncRes.merged > 0) {
+                  console.log(
+                    `[Pantry] Silently merged ${syncRes.merged} new recipe(s) from cloud.`
+                  );
+                  await loadRecipes();
+                }
+              } catch (err) {
+                console.warn(
+                  "[Pantry] Dashboard-open sync check failed (non-fatal):",
+                  err
+                );
+              }
+            })();
           }
         }
 
@@ -469,8 +516,30 @@ import RecipeGrid from "../components/pantry/RecipeGrid.astro";
         searchBtn.textContent = "Searching...";
 
         try {
-          // Ask the background script to generate an embedding using the offscreen document
-          const result: {
+          const lower = query.toLowerCase();
+
+          // --- Step 1: Synchronous tag/title pre-filter (always runs, no model needed) ---
+          // Split the query into individual tokens so "spicy vegan" matches both tags.
+          const queryTokens = lower.split(/\s+/);
+          const all = await getAllRecipes();
+
+          // A recipe is a "tag hit" if any of its tags (or its title) contains any
+          // query token. These are surfaced first regardless of the vector score.
+          const tagHitIds = new Set<string>();
+          const tagHits = all.filter((r) => {
+            const titleMatch = r.title?.toLowerCase().includes(lower);
+            const tagMatch = r.tags?.some((t) =>
+              queryTokens.some((token) => t.toLowerCase().includes(token))
+            );
+            if (titleMatch || tagMatch) {
+              tagHitIds.add(r.id);
+              return true;
+            }
+            return false;
+          });
+
+          // --- Step 2: Vector similarity search ---
+          const embeddingResult: {
             success: boolean;
             embedding?: number[];
             error?: string;
@@ -479,25 +548,37 @@ import RecipeGrid from "../components/pantry/RecipeGrid.astro";
             text: query,
           });
 
-          if (result.success && result.embedding) {
-            const matches = await searchRecipes(result.embedding, 20);
-            renderRecipes(matches);
-            if (recipeCountEl)
-              recipeCountEl.textContent = `${matches.length} result${
-                matches.length !== 1 ? "s" : ""
-              } for "${query}"`;
-          } else {
-            console.error("Search embedding failed:", result.error);
-            // Fall back to simple text search across title and tags
-            const all = await getAllRecipes();
-            const lower = query.toLowerCase();
-            const filtered = all.filter(
-              (r) =>
-                r.title?.toLowerCase().includes(lower) ||
-                r.tags?.some((t) => t.toLowerCase().includes(lower))
+          let merged: typeof all;
+
+          if (embeddingResult.success && embeddingResult.embedding) {
+            const vectorMatches = await searchRecipes(
+              embeddingResult.embedding,
+              20
             );
-            renderRecipes(filtered);
+
+            // Merge: tag hits pinned first, then vector results not already included.
+            const extraVectorMatches = vectorMatches.filter(
+              (r) => !tagHitIds.has(r.id)
+            );
+            merged = [...tagHits, ...extraVectorMatches];
+          } else {
+            console.error("Search embedding failed:", embeddingResult.error);
+            // Embedding unavailable — show tag/title matches only.
+            merged = tagHits;
           }
+
+          renderRecipes(merged);
+
+          const tagLabel =
+            tagHits.length > 0
+              ? ` (${tagHits.length} tag match${
+                  tagHits.length !== 1 ? "es" : ""
+                })`
+              : "";
+          if (recipeCountEl)
+            recipeCountEl.textContent = `${merged.length} result${
+              merged.length !== 1 ? "s" : ""
+            } for "${query}"${tagLabel}`;
         } catch (err) {
           console.error("Search error:", err);
         } finally {

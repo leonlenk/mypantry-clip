@@ -1,13 +1,20 @@
 ---
 import "../styles/global.scss";
 import feather from "feather-icons";
-const coffeeIcon = feather.icons["coffee"].toSvg({
+const coffeeIcon = (
+    feather.icons["coffee"] || feather.icons["help-circle"]
+).toSvg({
     width: 48,
     height: 48,
     color: "var(--color-accent)",
 });
-const keyIcon = feather.icons["key"].toSvg({ width: 18, height: 18 });
-const downloadIcon = feather.icons["download"].toSvg({
+const keyIcon = (feather.icons["key"] || feather.icons["help-circle"]).toSvg({
+    width: 18,
+    height: 18,
+});
+const downloadIcon = (
+    feather.icons["download"] || feather.icons["help-circle"]
+).toSvg({
     width: 48,
     height: 48,
     color: "var(--color-accent)",
@@ -79,6 +86,34 @@ const downloadIcon = feather.icons["download"].toSvg({
 
             .btn.google:hover {
                 background: #f8f8f8;
+            }
+
+            .btn.google.loading {
+                color: #888;
+                cursor: not-allowed;
+                opacity: 0.85;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 10px;
+            }
+
+            /* Inline spinner shown while the OAuth popup is opening */
+            .btn-spinner {
+                display: inline-block;
+                width: 16px;
+                height: 16px;
+                border: 2px solid #ccc;
+                border-top-color: #555;
+                border-radius: 50%;
+                animation: btn-spin 0.7s linear infinite;
+                flex-shrink: 0;
+            }
+
+            @keyframes btn-spin {
+                to {
+                    transform: rotate(360deg);
+                }
             }
 
             .btn.byok {
@@ -196,7 +231,7 @@ const downloadIcon = feather.icons["download"].toSvg({
 
                 <h2>Initializing Local AI...</h2>
                 <p class="text-meta" style="margin-bottom: 2rem;">
-                    Downloading the vectorization engine (22MB). This only
+                    Downloading the vectorization engine (~34MB). This only
                     happens once and ensures your data stays completely private.
                 </p>
 
@@ -208,6 +243,23 @@ const downloadIcon = feather.icons["download"].toSvg({
                     style="font-size: 0.9rem; font-weight: 500;"
                 >
                     0%
+                </p>
+            </section>
+
+            <!-- STATE 3: POPULATING PANTRY (cold boot sync, Google OAuth only) -->
+            <section id="step-syncing" class="view-state">
+                <span
+                    set:html={downloadIcon}
+                    style="display:block;margin-bottom:1rem;"></span>
+                <h2>Populating your Pantry...</h2>
+                <p class="text-meta" style="margin-bottom: 2rem;">
+                    Pulling your recipes from the cloud. Just a moment!
+                </p>
+                <div class="progress-container">
+                    <div id="sync-bar-fill" class="progress-fill"></div>
+                </div>
+                <p id="sync-text" style="font-size: 0.9rem; font-weight: 500;">
+                    Starting sync...
                 </p>
             </section>
 

@@ -10,7 +10,7 @@
 <html>
     <head>
         <meta charset="UTF-8" />
-        <title>Recipe AI Offscreen</title>
+        <title>MyPantry Offscreen</title>
     </head>
     <body>
         <script>
@@ -28,13 +28,15 @@
 
             async function getExtractor() {
                 if (!extractor) {
-                    // Quantized ONNX model (~22MB), downloaded on-demand and cached indefinitely.
-                    // Running here instead of the Service Worker prevents V3 timeout crashes.
+                    // snowflake-arctic-embed-s int8 (model_quantized.onnx, ~34MB, 384-dim).
+                    // Using dtype:"q8" targets the 8-bit quantized ONNX file — a good balance
+                    // of size (~34MB) and quality. Running in the offscreen document avoids
+                    // the Service Worker 30-second timeout limit.
                     extractor = await pipeline(
                         "feature-extraction",
-                        "Xenova/all-MiniLM-L6-v2",
+                        "Snowflake/snowflake-arctic-embed-s",
                         {
-                            quantized: true,
+                            dtype: "q8",
                             progress_callback: (info) => {
                                 chrome.runtime
                                     .sendMessage({
@@ -68,6 +70,41 @@
                     }
 
                     if (
+                        message.type === "CHECK_MODEL_CACHED" &&
+                        message.target === "offscreen"
+                    ) {
+                        // Check the browser Cache API for the model's quantized ONNX file.
+                        // Transformers.js stores files under a cache named "transformers-cache".
+                        // If the key model file is present, the model is fully downloaded.
+                        (async () => {
+                            try {
+                                // If the pipeline was already initialised in this session, it's definitely ready.
+                                if (extractor) {
+                                    sendResponse({ cached: true });
+                                    return;
+                                }
+                                const cache = await caches.open(
+                                    "transformers-cache"
+                                );
+                                const keys = await cache.keys();
+                                // Look for the quantized ONNX weights file for our model
+                                const modelFile = keys.find(
+                                    (req) =>
+                                        req.url.includes(
+                                            "snowflake-arctic-embed-s"
+                                        ) &&
+                                        req.url.includes("model_quantized.onnx")
+                                );
+                                sendResponse({ cached: !!modelFile });
+                            } catch (err) {
+                                // If the Cache API is unavailable, assume not cached
+                                sendResponse({ cached: false });
+                            }
+                        })();
+                        return true;
+                    }
+
+                    if (
                         message.type !== "GENERATE_EMBEDDING" ||
                         message.target !== "offscreen"
                     )
@@ -79,7 +116,7 @@
                     (async () => {
                         try {
                             console.log(
-                                "[Recipe AI Offscreen] Generating embedding for text length:",
+                                "[MyPantry Offscreen] Generating embedding for text length:",
                                 text.length
                             );
                             const pipe = await getExtractor();
@@ -92,12 +129,12 @@
                                 output.data as Float32Array
                             );
                             console.log(
-                                `[Recipe AI Offscreen] Done. Embedding dimension: ${embedding.length}`
+                                `[MyPantry Offscreen] Done. Embedding dimension: ${embedding.length}`
                             );
                             sendResponse({ success: true, embedding });
                         } catch (error: any) {
                             console.error(
-                                "[Recipe AI Offscreen] Embedding failed:",
+                                "[MyPantry Offscreen] Embedding failed:",
                                 error
                             );
                             sendResponse({

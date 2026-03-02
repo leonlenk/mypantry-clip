@@ -5,7 +5,7 @@
   --font-serif: 'Fraunces', serif;
   --font-sans: 'Quicksand', sans-serif;
 
-  // NYT Cooking elegant color palette
+  // MyPantry BRAND PALETTE (architecture.md)
   --color-bg: #FDFBF7;
   /* Vanilla Cream */
   --color-surface: #F4EFE6;
@@ -13,14 +13,14 @@
   --color-border: #E8E3D9;
   /* Oat Milk */
   --color-text: #4A4036;
-  /* Espresso (Primary text) */
-  --color-text-muted: #6B5E50;
-  /* Warm Taupe – darkened for legibility */
-  --color-text-meta: #9E8E7D;
-  /* Pale Latte – darkened for legibility */
-  --color-accent: #C8916F;
-  /* Warm Apricot – darkened for legibility */
-  --color-accent-hover: #B5805F;
+  /* Espresso (Primary) */
+  --color-text-muted: #8C7F70;
+  /* Warm Taupe (Secondary) */
+  --color-text-meta: #C4B7A6;
+  /* Pale Latte (Tertiary) */
+  --color-accent: #E5B299;
+  /* Warm Apricot (Accent) */
+  --color-accent-hover: #D69E83; // Slightly darker for hover state
 
   --color-surface-rgb: 244, 239, 230;
 
