@@ -423,6 +423,28 @@ import RecipeGrid from "../components/pantry/RecipeGrid.astro";
 
           const deleteIcon = safeIcon("x", { width: 18, height: 18 });
 
+          const contentHtml = `
+            <p class="desc">${description}${
+            (recipe.description || "").length > 140 ? "..." : ""
+          }</p>
+            <div class="tags">${tagsHtml}</div>
+          `;
+
+          const formattedContent = recipe.image
+            ? `
+            <div class="content-flip-container">
+              <div class="content-flip-inner">
+                <div class="content-front">
+                  ${contentHtml}
+                </div>
+                <div class="content-back">
+                  <img src="${recipe.image}" alt="${recipe.title} cover image" loading="lazy" />
+                </div>
+              </div>
+            </div>
+          `
+            : contentHtml;
+
           card.innerHTML = `
           <div class="card-header">
             <h3>${recipe.title}</h3>
@@ -440,10 +462,7 @@ import RecipeGrid from "../components/pantry/RecipeGrid.astro";
             </div>
           </div>
           ${metaHtml ? `<div class="meta">${metaHtml}</div>` : ""}
-          <p class="desc">${description}${
-            (recipe.description || "").length > 140 ? "..." : ""
-          }</p>
-          <div class="tags">${tagsHtml}</div>
+          ${formattedContent}
           <div class="card-footer">
             ${
               recipe.url

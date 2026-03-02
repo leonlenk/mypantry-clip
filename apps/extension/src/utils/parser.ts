@@ -11,9 +11,9 @@ const CLAUDE_API_URL = "https://api.anthropic.com/v1/messages";
  * - "readability" → JSON-LD and recipe card absent; Readability was used after DOM pruning.
  */
 export type ExtractionResult =
-    | { source: "json-ld"; jsonLd: object; recipeText?: string; url: string; title: string }
-    | { source: "dom-target"; recipeText: string; url: string; title: string }
-    | { source: "readability"; title: string; textContent: string; url: string };
+    | { source: "json-ld"; jsonLd: object; recipeText?: string; url: string; title: string; image?: string }
+    | { source: "dom-target"; recipeText: string; url: string; title: string; image?: string }
+    | { source: "readability"; title: string; textContent: string; url: string; image?: string };
 
 /**
  * Checks for a valid Recipe JSON-LD schema on the page.
@@ -68,6 +68,20 @@ export function checkJsonLd(): ExtractionResult | null {
         return null;
     }
 
+    function extractImage(jsonLd: any): string | undefined {
+        if (jsonLd.image) {
+            if (typeof jsonLd.image === 'string') return jsonLd.image;
+            if (Array.isArray(jsonLd.image) && jsonLd.image.length > 0) {
+                if (typeof jsonLd.image[0] === 'string') return jsonLd.image[0];
+                if (jsonLd.image[0].url) return jsonLd.image[0].url;
+            }
+            if (jsonLd.image.url) return jsonLd.image.url;
+        }
+        const ogImage = document.querySelector('meta[property="og:image"]') as HTMLMetaElement;
+        if (ogImage && ogImage.content) return ogImage.content;
+        return undefined;
+    }
+
     const jsonLd = tryExtractJsonLd();
     if (jsonLd !== null) {
         // Try to get recipe text for grouping info, even if we have JSON-LD
@@ -78,6 +92,7 @@ export function checkJsonLd(): ExtractionResult | null {
             recipeText: recipeText || undefined,
             url: window.location.href,
             title: document.title,
+            image: extractImage(jsonLd)
         };
     }
 
@@ -106,6 +121,12 @@ export function extractDomTarget(): ExtractionResult | null {
         return null;
     }
 
+    function extractImage(): string | undefined {
+        const ogImage = document.querySelector('meta[property="og:image"]') as HTMLMetaElement;
+        if (ogImage && ogImage.content) return ogImage.content;
+        return undefined;
+    }
+
     const recipeText = tryExtractRecipeText(document);
     if (recipeText) {
         return {
@@ -113,6 +134,7 @@ export function extractDomTarget(): ExtractionResult | null {
             recipeText,
             url: window.location.href,
             title: document.title,
+            image: extractImage()
         };
     }
     return null;
@@ -191,11 +213,18 @@ export function extractWithReadability(): ExtractionResult {
         throw new Error("Could not extract content from this page. Readability failed to parse the DOM.");
     }
 
+    function extractImage(): string | undefined {
+        const ogImage = document.querySelector('meta[property="og:image"]') as HTMLMetaElement;
+        if (ogImage && ogImage.content) return ogImage.content;
+        return undefined;
+    }
+
     return {
         source: "readability",
         title: article.title || document.title,
         textContent: article.textContent || "",
         url: window.location.href,
+        image: extractImage()
     };
 }
 
@@ -452,6 +481,9 @@ Extract the recipe into the specified JSON format.
                     text
                 }))
             };
+            if (extractedData.image && !recipeData.image) {
+                recipeData.image = extractedData.image;
+            }
             return { recipeData, payloadCharCount: payload.length };
         } catch (error: any) {
             if (error.name === 'AbortError') {
@@ -598,6 +630,9 @@ Extract the recipe into the specified JSON format.
 
         const recipeData: Recipe = parsedData;
         recipeData.createdAt = Date.now();
+        if (extractedData.image && !recipeData.image) {
+            recipeData.image = extractedData.image;
+        }
         return { recipeData, payloadCharCount };
     } catch (error: any) {
         throw new Error(error.message || "LLM returned malformed JSON");
