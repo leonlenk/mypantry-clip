@@ -6,7 +6,7 @@ const stepDownloading = document.getElementById("step-downloading");
 const stepSyncing = document.getElementById("step-syncing");
 const stepReady = document.getElementById("step-ready");
 
-const btnOauth = document.getElementById("btn-oauth-supabase");
+const btnOauth = document.getElementById("btn-oauth-google");
 const btnShowByok = document.getElementById("btn-show-byok");
 const byokForm = document.getElementById("byok-form");
 const inputApiKey = document.getElementById("input-api-key") as HTMLInputElement | null;
