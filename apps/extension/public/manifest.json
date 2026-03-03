@@ -23,15 +23,20 @@
     },
     "permissions": [
         "activeTab",
-        "scripting",
         "storage",
         "offscreen",
         "identity"
     ],
-    "host_permissions": [
-        "http://localhost:8000/*",
-        "http://127.0.0.1:8000/*",
-        "https://*.supabase.co/*"
+    "content_scripts": [
+        {
+            "matches": [
+                "<all_urls>"
+            ],
+            "js": [
+                "content.js"
+            ],
+            "run_at": "document_idle"
+        }
     ],
     "content_security_policy": {
         "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"

@@ -1,7 +1,8 @@
 // background.ts
 // Service worker for the extension
 
-import { checkJsonLd, extractDomTarget, extractWithReadability, extractRecipeWithClaude, askSubstitutionWithClaude } from "./utils/parser";
+import type { ExtractionResult } from "./utils/parser";
+import { extractRecipeWithClaude, askSubstitutionWithClaude } from "./utils/parser";
 import { syncRecipeToCloud, deleteRecipeFromCloud, syncAllFromCloud, getCloudLatestTimestamp } from './utils/sync';
 import { saveRecipeLocally, getRecipe, getAllRecipes } from "./utils/db";
 
@@ -240,43 +241,23 @@ async function executeExtractionInBackground(url: string, tabId: number, apiKey:
         await updateExtractionStatus(url, tabId, "Extracting page content...");
         console.log(`[MyPantry] Starting background extraction for ${url} (tab ${tabId}) with ${llmProvider} model: ${llmModel} (mode: ${authMode})`);
 
-        console.log("[MyPantry] Tier 1: Checking for JSON-LD schema...");
-        let results = await chrome.scripting.executeScript({
-            target: { tabId },
-            func: checkJsonLd,
+        // Delegate all three extraction tiers to the declared content script.
+        // The content script runs in the page's DOM context and handles the
+        // JSON-LD → DOM-target → Readability cascade internally.
+        const extractedData = await new Promise<ExtractionResult | null>((resolve) => {
+            chrome.tabs.sendMessage(
+                tabId,
+                { type: "EXTRACT_PAGE" },
+                (response: { result: ExtractionResult | null; error?: string }) => {
+                    if (chrome.runtime.lastError) {
+                        console.error("[MyPantry] Content script message error:", chrome.runtime.lastError.message);
+                        resolve(null);
+                        return;
+                    }
+                    resolve(response?.result ?? null);
+                }
+            );
         });
-
-        let extractedData = results?.[0]?.result;
-
-        if (!extractedData) {
-            console.log("[MyPantry] JSON-LD failed. Tier 2: Extracting targeted DOM recipe card...");
-            await updateExtractionStatus(url, tabId, "Hunting for recipe card on page...");
-
-            results = await chrome.scripting.executeScript({
-                target: { tabId },
-                func: extractDomTarget,
-            });
-
-            extractedData = results?.[0]?.result;
-        }
-
-        if (!extractedData) {
-            console.log("[MyPantry] Targeted DOM extraction failed. Tier 3: Injecting Readability fallback...");
-            await updateExtractionStatus(url, tabId, "Loading entire page context (slower)...");
-
-            await chrome.scripting.executeScript({
-                target: { tabId },
-                files: ["Readability.js"],
-            });
-
-            console.log("[MyPantry] Executing Readability extraction...");
-            results = await chrome.scripting.executeScript({
-                target: { tabId },
-                func: extractWithReadability,
-            });
-
-            extractedData = results?.[0]?.result;
-        }
 
         if (!extractedData) {
             throw new Error("Extraction failed: No results returned from page.");

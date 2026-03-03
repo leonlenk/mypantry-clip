@@ -16,11 +16,7 @@ import MainView from "../components/popup/MainView.astro";
 
     <script>
       import { decryptData, encryptData } from "../utils/crypto";
-      import {
-        checkJsonLd,
-        extractWithReadability,
-        extractRecipeWithClaude,
-      } from "../utils/parser";
+
       import { saveRecipeLocally } from "../utils/db";
 
       // ------------- View State -------------

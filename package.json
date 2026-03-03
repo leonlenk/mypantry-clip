@@ -7,6 +7,7 @@
         "restart-api": "pnpm kill-api && pnpm dev:api",
         "dev:extension": "pnpm --filter mypantry dev",
         "build:extension": "pnpm --filter mypantry build",
+        "zip:extension": "cd apps/extension && zip -r my-pantry.zip dist/",
         "test:firefox": "pnpm --filter mypantry test:firefox",
         "test:chromium": "pnpm --filter mypantry test:chromium",
         "db:push": "pnpm exec supabase db push",

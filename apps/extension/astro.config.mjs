@@ -25,11 +25,13 @@ export default defineConfig({
           warn(warning);
         },
         input: {
-          background: "src/background.ts"
+          background: "src/background.ts",
+          content: "src/content.ts"
         },
         output: {
           entryFileNames: (chunk) => {
             if (chunk.name === "background") return "background.js";
+            if (chunk.name === "content") return "content.js";
             return "assets/[name].[hash].js";
           }
         }

@@ -4,6 +4,7 @@ dist/
 .astro/
 *.log
 .temp/
+my-pantry.zip
 
 # dependencies
 node_modules/
