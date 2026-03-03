@@ -232,24 +232,53 @@ async function executeExtractionInBackground(url: string, tabId: number, apiKey:
         await updateExtractionStatus(url, tabId, "Extracting page content...");
         console.log(`[MyPantry] Starting background extraction for ${url} (tab ${tabId}) with ${llmProvider} model: ${llmModel} (mode: ${authMode})`);
 
-        // Delegate all three extraction tiers to the declared content script.
+        // Delegate all three extraction tiers to the dynamically injected content script.
         // The content script runs in the page's DOM context and handles the
         // JSON-LD → DOM-target → Readability cascade internally.
-        const extractedData = await new Promise<ExtractionResult | null>((resolve) => {
-            chrome.tabs.sendMessage(
-                tabId,
-                { type: "EXTRACT_PAGE" },
-                (response: { result: ExtractionResult | null; error?: string }) => {
-                    if (chrome.runtime.lastError) {
-                        console.error("[MyPantry] Content script message error:", chrome.runtime.lastError.message);
-                        resolve(null);
-                        return;
+        const sendExtractMessage = (): Promise<{ result: ExtractionResult | null; error?: string; noListener?: boolean }> => {
+            return new Promise((resolve) => {
+                chrome.tabs.sendMessage(
+                    tabId,
+                    { type: "EXTRACT_PAGE" },
+                    (response) => {
+                        if (chrome.runtime.lastError) {
+                            resolve({ result: null, noListener: true });
+                            return;
+                        }
+                        resolve(response || { result: null });
                     }
-                    resolve(response?.result ?? null);
-                }
-            );
-        });
+                );
+            });
+        };
 
+        let response = await sendExtractMessage();
+
+        if (response.noListener) {
+            console.log("[MyPantry] Content script not present, injecting...");
+            try {
+                await chrome.scripting.executeScript({
+                    target: { tabId },
+                    files: ["content.js"]
+                });
+                // Wait briefly for the script to initialize
+                await new Promise(r => setTimeout(r, 100));
+
+                response = await sendExtractMessage();
+
+                if (response.noListener) {
+                    throw new Error("Content script injection failed to initialize.");
+                }
+            } catch (err: any) {
+                console.error("[MyPantry] Failed to inject content script:", err);
+                throw new Error("Could not access page content. Please try reloading the tab. Error: " + err.message);
+            }
+        }
+
+        if (response.error) {
+            throw new Error(response.error);
+        }
+
+        const extractedData = response.result;
         if (!extractedData) {
             throw new Error("Extraction failed: No results returned from page.");
         }

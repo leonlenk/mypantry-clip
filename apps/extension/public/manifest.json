@@ -25,7 +25,7 @@
         "activeTab",
         "storage",
         "offscreen",
-        "tabs"
+        "scripting"
     ],
     "host_permissions": [
         "https://mypantry.dev/*"
@@ -33,7 +33,7 @@
     "content_scripts": [
         {
             "matches": [
-                "<all_urls>"
+                "https://mypantry.dev/*"
             ],
             "js": [
                 "content.js"
