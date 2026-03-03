@@ -14,8 +14,7 @@
     </head>
     <body>
         <script>
-            /// <reference types="chrome" />
-            import { pipeline, env } from "@xenova/transformers";
+            import { pipeline, env } from "@huggingface/transformers";
 
             // Allow Transformers.js to cache the model in the browser Cache API.
             // Do NOT load local models (no bundling) - fetch from HuggingFace on first use.
@@ -24,7 +23,7 @@
             // @ts-ignore
             env.useBrowserCache = true;
 
-            let extractor: Awaited<ReturnType<typeof pipeline>> | null = null;
+            let extractor: any = null;
 
             async function getExtractor() {
                 if (!extractor) {
@@ -37,6 +36,7 @@
                         "Snowflake/snowflake-arctic-embed-s",
                         {
                             dtype: "q8",
+                            device: "webgpu",
                             progress_callback: (info) => {
                                 chrome.runtime
                                     .sendMessage({

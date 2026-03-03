@@ -12,7 +12,7 @@ export default defineConfig({
   vite: {
     // Prevent Vite pre-bundling Transformers.js since it relies on WASM loaded at runtime
     optimizeDeps: {
-      exclude: ["@xenova/transformers", "onnxruntime-web"],
+      exclude: ["@huggingface/transformers", "onnxruntime-web"],
     },
     build: {
       assetsInlineLimit: 0,
