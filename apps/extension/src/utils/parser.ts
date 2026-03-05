@@ -196,7 +196,7 @@ Extract the recipe into the specified JSON format.
         fetchBody = { payload };
 
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 120000);
+        const timeoutId = setTimeout(() => controller.abort(), 180000);
 
         try {
             const response = await fetch(fetchUrl, {
@@ -274,7 +274,7 @@ Extract the recipe into the specified JSON format.
             return { recipeData, payloadCharCount: payload.length };
         } catch (error: any) {
             if (error.name === 'AbortError') {
-                throw new Error(`Cloud API request timed out after 120s.`);
+                throw new Error(`Cloud API request timed out after 180s.`);
             }
             throw error;
         } finally {
@@ -346,7 +346,7 @@ Extract the recipe into the specified JSON format.
     }
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 120000); // 120 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 180000); // 180 second timeout
 
     let response;
     try {
@@ -358,7 +358,7 @@ Extract the recipe into the specified JSON format.
         });
     } catch (error: any) {
         if (error.name === 'AbortError') {
-            throw new Error(`LLM API request timed out after 120s. The page might be too long. Try a faster or smaller model.`);
+            throw new Error(`LLM API request timed out after 180s. The page might be too long. Try a faster or smaller model.`);
         }
         throw error;
     } finally {

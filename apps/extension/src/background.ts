@@ -471,24 +471,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         return true;
     }
 
-    if (message.type === 'CHECK_MODEL_CACHED') {
-        (async () => {
-            await setupOffscreenDocument();
-            const res = await chrome.runtime.sendMessage({ type: "CHECK_MODEL_CACHED", target: "offscreen" });
-            sendResponse(res);
-        })();
-        return true;
-    }
-
-    if (message.type === 'INIT_MODEL_DOWNLOAD') {
-        (async () => {
-            await setupOffscreenDocument();
-            const res = await chrome.runtime.sendMessage({ type: "INIT_MODEL_DOWNLOAD", target: "offscreen" });
-            sendResponse(res);
-        })();
-        return true;
-    }
-
     if (message.type === 'GENERATE_EMBEDDING') {
         (async () => {
             // this handles requests from other parts of the extension that aren't the background extraction

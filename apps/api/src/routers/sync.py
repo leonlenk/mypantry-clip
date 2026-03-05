@@ -16,8 +16,10 @@ Endpoint summary:
   DELETE /api/sync/delete/{id}   — Delete a recipe by id for the user.
 """
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Any
+import json
 from loguru import logger
 import traceback
 
@@ -145,27 +147,53 @@ def list_recipes(user_id: str = Depends(verify_jwt), since: str | None = None):
     """
     Return recipe JSON blobs for the authenticated user, ordered newest-first.
 
-    Optional `since` (ISO-8601 timestamp) enables differential sync: only
-    recipes with updated_at > since are returned, making frequent polls cheap.
+    Streams the response using DB chunking to prevent Out-Of-Memory (OOM) 
+    errors when parsing thousands of massive recipes on 256MB VMs, while 
+    preserving the exact `{"recipes": [...]}` output payload syntax 
+    expected by the Chrome extension.
     """
-    try:
-        client = get_supabase_client()
-        query = (
-            client.table(TABLE)
-            .select("id, recipe_json, updated_at")
-            .eq("user_id", user_id)
-            .order("updated_at", desc=True)
-        )
-        if since:
-            query = query.gt("updated_at", since)
+    def recipe_generator():
+        yield b'{"recipes": ['
+        
+        chunk_size = 50
+        offset = 0
+        first_item = True
+        
+        try:
+            client = get_supabase_client()
+            while True:
+                query = (
+                    client.table(TABLE)
+                    .select("id, recipe_json, updated_at")
+                    .eq("user_id", user_id)
+                    .order("updated_at", desc=True)
+                )
+                if since:
+                    query = query.gt("updated_at", since)
+                    
+                result = query.range(offset, offset + chunk_size - 1).execute()
+                recipes = result.data or []
+                
+                for r in recipes:
+                    if not first_item:
+                        yield b','
+                    yield json.dumps(r).encode('utf-8')
+                    first_item = False
+                
+                if len(recipes) < chunk_size:
+                    break
+                
+                offset += chunk_size
+                
+        except Exception as e:
+            logger.error(f"[Sync] List stream generator failed at offset {offset}: {traceback.format_exc()}")
+            # If we fail mid-stream, the stream will abruptly end, forcing the client parser to 
+            # hard-fail on invalid JSON, which forces `.catch()` on the frontend gracefully.
+            
+        yield b']}'
 
-        result = query.execute()
-        recipes = result.data or []
-        logger.info(f"[Sync] Listed {len(recipes)} recipes for user {user_id} (since={since or 'all'})")
-        return {"recipes": recipes}
-    except Exception as e:
-        logger.error(f"[Sync] List failed: {traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail=f"Failed to list recipes: {e}")
+    logger.info(f"[Sync] Streaming recipes for user {user_id} (since={since or 'all'})")
+    return StreamingResponse(recipe_generator(), media_type="application/json")
 
 
 @router.delete("/delete/{recipe_id}")

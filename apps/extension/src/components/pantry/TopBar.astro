@@ -21,16 +21,6 @@ const uploadIcon =
                     >Favorites</button
                 >
             </nav>
-            <script is:inline>
-                (function () {
-                    const current =
-                        localStorage.getItem("pantryFilter") || "all";
-                    const btn = document.querySelector(
-                        '.filters .filter-btn[data-filter="' + current + '"]'
-                    );
-                    if (btn) btn.classList.add("active");
-                })();
-            </script>
         </div>
 
         <!-- CENTER: Search bar + recipe count underneath -->
@@ -79,15 +69,6 @@ const uploadIcon =
                 label="All Tags"
                 placeholderId="selected-tag"
             />
-            <script is:inline>
-                (function () {
-                    const tag = localStorage.getItem("pantryTagFilter");
-                    if (tag) {
-                        const el = document.getElementById("selected-tag");
-                        if (el) el.textContent = tag;
-                    }
-                })();
-            </script>
         </div>
     </div>
 </header>

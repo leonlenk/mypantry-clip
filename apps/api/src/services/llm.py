@@ -5,7 +5,10 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 from loguru import logger
 
-client = genai.Client(api_key=settings.gemini_api_key)
+client = genai.Client(
+    api_key=settings.gemini_api_key,
+    http_options=types.HttpOptions(timeout=150000)
+)
 
 class Ingredient(BaseModel):
     name: str = Field(description="The core ingredient name ONLY, absolutely NO parentheses")

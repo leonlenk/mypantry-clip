@@ -1,10 +1,10 @@
 {
     "manifest_version": 3,
-    "name": "Pantry Clip",
+    "name": "My Pantry",
     "version": "0.1.0",
-    "description": "Privacy-first browser extension for extracting and searching recipes.",
+    "description": "Browser extension for extracting, saving, and searching recipes.",
     "action": {
-        "default_title": "Pantry Clip",
+        "default_title": "My Pantry",
         "default_popup": "popup.html",
         "default_icon": {
             "16": "icon-16.png",

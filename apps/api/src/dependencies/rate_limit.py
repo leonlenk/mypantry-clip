@@ -4,8 +4,12 @@ from src.config import settings
 from loguru import logger
 import time
 
-# Initialize synchronous Redis client
-redis = Redis(url=settings.upstash_redis_rest_url, token=settings.upstash_redis_rest_token)
+# Initialize synchronous Redis client with retries for transient disconnects
+redis = Redis(
+    url=settings.upstash_redis_rest_url, 
+    token=settings.upstash_redis_rest_token,
+    rest_retries=3
+)
 
 def check_rate_limit_and_telemetry(user_id: str, endpoint: str, limit: int = 50, window_seconds: int = 604800):
     """
@@ -34,6 +38,6 @@ def check_rate_limit_and_telemetry(user_id: str, endpoint: str, limit: int = 50,
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Redis error in rate_limit: {e}")
+        logger.warning(f"Redis error in rate_limit: {e}")
         # Fail-open approach if Redis is down, to maintain availability
         pass

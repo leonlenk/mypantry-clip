@@ -207,7 +207,7 @@ btnSubmitByok?.addEventListener("click", async () => {
         apiUrl: import.meta.env.PUBLIC_API_URL ?? "http://127.0.0.1:8000",
     });
 
-    startModelDownload();
+    await doPostModelSync();
 });
 
 // 2. OAuth Flow — Tab-Capture strategy (no `identity` permission required)
@@ -268,31 +268,9 @@ btnOauth?.addEventListener("click", async () => {
 
     console.log("[OAuth] Opening auth tab:", authUrl);
     chrome.tabs.create({ url: authUrl });
-    // startModelDownload() is now called when we receive AUTH_COMPLETE below
+    // startModelDownload() used to be here, but we now jump straight to doPostModelSync
+    // since the model is pre-downloaded during build and bundled.
 });
-
-// 3. Initiate model setup via Offscreen
-// On relog the model is already in the browser's Cache API — skip the download screen entirely.
-async function startModelDownload() {
-    let cached = false;
-    try {
-        const res: { cached: boolean } = await chrome.runtime.sendMessage({ type: "CHECK_MODEL_CACHED" });
-        cached = !!res?.cached;
-    } catch {
-        cached = false;
-    }
-
-    if (cached) {
-        // Model already on disk — mark setup complete and jump straight to ready/sync
-        await chrome.storage.local.set({ setupComplete: true });
-        await doPostModelSync();
-        return;
-    }
-
-    // First-time download: show progress UI and kick off the download
-    showState(stepDownloading);
-    chrome.runtime.sendMessage({ type: "INIT_MODEL_DOWNLOAD" });
-}
 
 /**
  * Runs after the model is ready (downloaded or already cached).
@@ -356,30 +334,17 @@ async function doPostModelSync() {
     showState(stepReady);
 }
 
-// Listen for messages from the background service worker
 chrome.runtime.onMessage.addListener((msg) => {
     // AUTH_COMPLETE: background persisted the Supabase session after the
     // content script captured it on mypantry.dev/auth/callback.
     if (msg.type === "AUTH_COMPLETE") {
         setOauthLoading(false);
-        startModelDownload();
-    }
 
-    if (msg.type === "DOWNLOAD_PROGRESS") {
-        const { loaded, total } = msg;
-        if (total && total > 0) {
-            const percent = Math.round((loaded / total) * 100);
-            if (progressBar) progressBar.style.width = `${percent}%`;
-            if (progressText) progressText.textContent = `${percent}%`;
-        } else if (msg.status === "ready" || msg.status === "done") {
-            if (progressBar) progressBar.style.width = `100%`;
-            if (progressText) progressText.textContent = `100%`;
-
-            setTimeout(async () => {
-                await chrome.storage.local.set({ setupComplete: true });
-                await doPostModelSync();
-            }, 500);
-        }
+        // Mark setup complete and jump to sync since model is bundled
+        (async () => {
+            await chrome.storage.local.set({ setupComplete: true });
+            await doPostModelSync();
+        })();
     }
 });
 

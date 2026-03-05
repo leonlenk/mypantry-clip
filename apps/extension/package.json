@@ -3,7 +3,9 @@
   "type": "module",
   "version": "0.1.0",
   "scripts": {
+    "predev": "node scripts/download-model.mjs",
     "dev": "astro dev",
+    "prebuild": "node scripts/download-model.mjs",
     "build": "astro build && esbuild src/background.ts --bundle --format=esm --outfile=dist/background.js && esbuild src/content.ts --bundle --format=esm --outfile=dist/content.js",
     "preview": "astro preview",
     "astro": "astro",

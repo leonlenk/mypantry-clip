@@ -16,12 +16,16 @@
         <script>
             import { pipeline, env } from "@huggingface/transformers";
 
-            // Allow Transformers.js to cache the model in the browser Cache API.
-            // Do NOT load local models (no bundling) - fetch from HuggingFace on first use.
+            // Disable remote models and browser cache — load purely from packaged local files.
             // @ts-ignore
-            env.allowLocalModels = false;
+            env.allowLocalModels = true;
             // @ts-ignore
-            env.useBrowserCache = true;
+            env.allowRemoteModels = false;
+            // @ts-ignore
+            env.useBrowserCache = false;
+            // Use the bundled files path (relative to the extension root)
+            // @ts-ignore
+            env.localModelPath = chrome.runtime.getURL("models");
 
             let extractor: any = null;
 
@@ -54,56 +58,6 @@
             // Listen for embedding requests from the background service worker
             chrome.runtime.onMessage.addListener(
                 (message, _sender, sendResponse) => {
-                    if (
-                        message.type === "INIT_MODEL_DOWNLOAD" &&
-                        message.target === "offscreen"
-                    ) {
-                        getExtractor()
-                            .then(() => sendResponse({ success: true }))
-                            .catch((error) =>
-                                sendResponse({
-                                    success: false,
-                                    error: error.message,
-                                })
-                            );
-                        return true;
-                    }
-
-                    if (
-                        message.type === "CHECK_MODEL_CACHED" &&
-                        message.target === "offscreen"
-                    ) {
-                        // Check the browser Cache API for the model's quantized ONNX file.
-                        // Transformers.js stores files under a cache named "transformers-cache".
-                        // If the key model file is present, the model is fully downloaded.
-                        (async () => {
-                            try {
-                                // If the pipeline was already initialised in this session, it's definitely ready.
-                                if (extractor) {
-                                    sendResponse({ cached: true });
-                                    return;
-                                }
-                                const cache = await caches.open(
-                                    "transformers-cache"
-                                );
-                                const keys = await cache.keys();
-                                // Look for the quantized ONNX weights file for our model
-                                const modelFile = keys.find(
-                                    (req) =>
-                                        req.url.includes(
-                                            "snowflake-arctic-embed-s"
-                                        ) &&
-                                        req.url.includes("model_quantized.onnx")
-                                );
-                                sendResponse({ cached: !!modelFile });
-                            } catch (err) {
-                                // If the Cache API is unavailable, assume not cached
-                                sendResponse({ cached: false });
-                            }
-                        })();
-                        return true;
-                    }
-
                     if (
                         message.type !== "GENERATE_EMBEDDING" ||
                         message.target !== "offscreen"
