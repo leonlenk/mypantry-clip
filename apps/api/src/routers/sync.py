@@ -26,7 +26,7 @@ import traceback
 from src.dependencies.auth import verify_jwt
 from src.services.supabase_client import get_supabase_client
 
-router = APIRouter(prefix="/api/sync", tags=["sync"])
+router = APIRouter(prefix="/sync", tags=["sync"])
 
 TABLE = "recipes"
 

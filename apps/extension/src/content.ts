@@ -1,7 +1,7 @@
 // content.ts
 // Declared content script — auto-injected by Chrome on every page.
 // Two responsibilities:
-//   1. On mypantry.dev/auth/callback: capture the Supabase session from
+//   1. On mypantry.dev/api/auth/callback: capture the Supabase session from
 //      localStorage after a tab-based OAuth redirect and relay it to the
 //      background service worker (replaces the `identity` permission flow).
 //   2. On all other pages: handle EXTRACT_PAGE messages for recipe extraction.
@@ -10,12 +10,12 @@ import { Readability } from "@mozilla/readability";
 import type { ExtractionResult } from "./utils/parser";
 
 // ─── Auth Session Capture ─────────────────────────────────────────────────────
-// Only active on the mypantry.dev/auth/callback page. After a successful Google
+// Only active on the mypantry.dev/api/auth/callback page. After a successful Google
 // OAuth, Supabase redirects here and appends the session to the URL hash.
 // We parse the hash and relay the tokens to the background worker, which
 // persists them and closes this tab.
 console.log(`[PantryClip] Content script loaded on ${window.location.hostname}${window.location.pathname}`);
-if (window.location.hostname.includes('mypantry.dev') && window.location.pathname === '/auth/callback') {
+if (window.location.hostname.includes('mypantry.dev') && window.location.pathname === '/api/auth/callback') {
     console.log('[PantryClip] Auth callback page detected. Checking URL hash...');
     // The hash looks like: #access_token=...&refresh_token=...&expires_in=...
     const hash = window.location.hash;

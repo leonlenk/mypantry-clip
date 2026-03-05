@@ -218,7 +218,7 @@ _PRIVACY_HTML = """<!DOCTYPE html>
             MyPantry ("<strong>we</strong>", "<strong>us</strong>", or "<strong>our</strong>") is the operator of the
             MyPantry browser extension ("Pantry Clip") and the cloud synchronisation API hosted at
             <code>mypantry.dev</code>. For questions about this policy, contact us at
-            <a href="mailto:privacy@mypantry.dev" style="color:var(--color-accent)">privacy@mypantry.dev</a>.
+            <a href="mailto:support@mypantry.dev" style="color:var(--color-accent)">support@mypantry.dev</a>.
         </p>
     </section>
 
@@ -360,7 +360,7 @@ _PRIVACY_HTML = """<!DOCTYPE html>
         <h2>8. Data Retention &amp; Deletion</h2>
         <ul>
             <li><strong>Local data:</strong> Persists until you uninstall the Extension or use the "Export &amp; clear" function in Settings. We have no access to it.</li>
-            <li><strong>Cloud sync data:</strong> Stored in Supabase linked to your user ID. You may delete your account and all associated data at any time by emailing <a href="mailto:privacy@mypantry.dev" style="color:var(--color-accent)">privacy@mypantry.dev</a>. Deletion is processed within 30 days.</li>
+            <li><strong>Cloud sync data:</strong> Stored in Supabase linked to your user ID. You may delete your account and all associated data at any time by emailing <a href="mailto:support@mypantry.dev" style="color:var(--color-accent)">support@mypantry.dev</a>. Deletion is processed within 30 days.</li>
             <li><strong>Request logs:</strong> Retained for up to 30 days on Fly.io log streams, then automatically purged.</li>
             <li><strong>Redis counters:</strong> Rate-limit counters are keyed to a rolling 7-day window and expire automatically.</li>
         </ul>
@@ -418,7 +418,7 @@ _PRIVACY_HTML = """<!DOCTYPE html>
             MyPantry is not directed at children under 13 (or the applicable age of digital consent in your
             jurisdiction). We do not knowingly collect personal information from children. If you believe
             a child has provided us with personal data, contact us at
-            <a href="mailto:privacy@mypantry.dev" style="color:var(--color-accent)">privacy@mypantry.dev</a>
+            <a href="mailto:support@mypantry.dev" style="color:var(--color-accent)">support@mypantry.dev</a>
             and we will delete it promptly.
         </p>
     </section>
@@ -434,7 +434,7 @@ _PRIVACY_HTML = """<!DOCTYPE html>
             <li><strong>Portability:</strong> Export your local recipe database at any time via the "Export to JSON" feature in the Extension settings.</li>
             <li><strong>Objection / Restriction:</strong> Object to or restrict certain processing.</li>
         </ul>
-        <p>To exercise any of these rights, email <a href="mailto:privacy@mypantry.dev" style="color:var(--color-accent)">privacy@mypantry.dev</a>.</p>
+        <p>To exercise any of these rights, email <a href="mailto:support@mypantry.dev" style="color:var(--color-accent)">support@mypantry.dev</a>.</p>
     </section>
 
     <!-- 13. Changes -->
@@ -451,7 +451,7 @@ _PRIVACY_HTML = """<!DOCTYPE html>
     <footer>
         <span>&copy; 2026 MyPantry &nbsp;·&nbsp; <a href="https://mypantry.dev">mypantry.dev</a></span>
         <span>
-            <a href="mailto:privacy@mypantry.dev">privacy@mypantry.dev</a>
+            <a href="mailto:support@mypantry.dev">support@mypantry.dev</a>
         </span>
     </footer>
 

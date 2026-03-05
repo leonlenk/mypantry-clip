@@ -137,6 +137,35 @@ import RecipeGrid from "../components/pantry/RecipeGrid.astro";
           });
         });
 
+        // Fetch active extractions from the background script
+        if (typeof chrome !== "undefined" && chrome.runtime?.sendMessage) {
+          try {
+            const activeRes = await chrome.runtime.sendMessage({
+              type: "GET_ALL_EXTRACTIONS",
+            });
+            if (activeRes && activeRes.extractions) {
+              for (const [url, data] of Object.entries(
+                activeRes.extractions as Record<string, any>
+              )) {
+                let displayTitle = data.title;
+                if (!displayTitle) {
+                  try {
+                    displayTitle = new URL(url).hostname.replace("www.", "");
+                  } catch (e) {
+                    displayTitle = "Website";
+                  }
+                }
+                activeExtractions[url] = {
+                  status: data.status,
+                  title: displayTitle,
+                };
+              }
+            }
+          } catch (e) {
+            console.warn("[Pantry] Failed to fetch active extractions:", e);
+          }
+        }
+
         await loadRecipes();
 
         // Listen for extraction updates so we can live reload

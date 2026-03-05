@@ -213,7 +213,7 @@ btnSubmitByok?.addEventListener("click", async () => {
 // 2. OAuth Flow — Tab-Capture strategy (no `identity` permission required)
 //
 // Instead of chrome.identity.launchWebAuthFlow (which needs the `identity`
-// permission), we open a real tab to mypantry.dev/auth/callback. Supabase
+// permission), we open a real tab to mypantry.dev/api/auth/callback. Supabase
 // redirects to that URL after Google consent and writes the session to
 // localStorage. The content script on that page reads the session and sends
 // AUTH_SESSION_CAPTURED → background, which persists the tokens, closes the
@@ -263,7 +263,7 @@ btnOauth?.addEventListener("click", async () => {
 
     // Supabase will redirect back to this page after the Google consent screen.
     // The content script running on that page captures the session and notifies us.
-    const redirectTo = "https://mypantry.dev/auth/callback";
+    const redirectTo = "https://mypantry.dev/api/auth/callback";
     const authUrl = `${supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectTo)}`;
 
     console.log("[OAuth] Opening auth tab:", authUrl);
@@ -336,7 +336,7 @@ async function doPostModelSync() {
 
 chrome.runtime.onMessage.addListener((msg) => {
     // AUTH_COMPLETE: background persisted the Supabase session after the
-    // content script captured it on mypantry.dev/auth/callback.
+    // content script captured it on mypantry.dev/api/auth/callback.
     if (msg.type === "AUTH_COMPLETE") {
         setOauthLoading(false);
 

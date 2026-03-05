@@ -49,7 +49,7 @@ async function getApiBase(): Promise<string> {
     const resolved = (data.apiUrl as string | undefined) ?? "http://127.0.0.1:8000";
     // Default to 127.0.0.1 (not localhost) — Chrome service workers can have
     // issues resolving 'localhost' on some systems, while 127.0.0.1 always works.
-    // This matches the hardcoded address used by parser.ts for /api/extract/.
+    // This matches the hardcoded address used by parser.ts for /extract/.
     console.log(`[Sync:url] apiUrl from storage: ${data.apiUrl ?? "(unset, using default)"} → resolved: ${resolved}`);
     return resolved;
 }
@@ -67,7 +67,7 @@ export async function syncRecipeToCloud(recipe: Recipe): Promise<void> {
     }
 
     const apiBase = await getApiBase();
-    const url = `${apiBase}/api/sync/save`;
+    const url = `${apiBase}/sync/save`;
 
     // Strip the embedding before sending — the cloud schema has no vector column.
     const { embedding: _embedding, ...recipeWithoutEmbedding } = recipe;
@@ -110,7 +110,7 @@ export async function syncBatchToCloud(recipes: Recipe[]): Promise<void> {
     }
 
     const apiBase = await getApiBase();
-    const url = `${apiBase}/api/sync/import`;
+    const url = `${apiBase}/sync/import`;
 
     // Strip embeddings before sending
     const recipesWithoutEmbeddings = recipes.map(r => {
@@ -149,7 +149,7 @@ export async function deleteRecipeFromCloud(recipeId: string): Promise<void> {
     if (!token) return;
 
     const apiBase = await getApiBase();
-    const url = `${apiBase}/api/sync/delete/${encodeURIComponent(recipeId)}`;
+    const url = `${apiBase}/sync/delete/${encodeURIComponent(recipeId)}`;
 
     console.log(`[Sync] Deleting recipe '${recipeId}' → DELETE ${url}`);
 
@@ -181,7 +181,7 @@ export async function getCloudLatestTimestamp(): Promise<string | null> {
 
     const apiBase = await getApiBase();
     try {
-        const res = await fetch(`${apiBase}/api/sync/latest`, {
+        const res = await fetch(`${apiBase}/sync/latest`, {
             headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) return null;
@@ -203,8 +203,8 @@ export async function syncAllFromCloud(since?: string): Promise<Recipe[]> {
 
     const apiBase = await getApiBase();
     const url = since
-        ? `${apiBase}/api/sync/list?since=${encodeURIComponent(since)}`
-        : `${apiBase}/api/sync/list`;
+        ? `${apiBase}/sync/list?since=${encodeURIComponent(since)}`
+        : `${apiBase}/sync/list`;
 
     console.log(`[Sync] Fetching cloud recipes${since ? ` since ${since}` : " (full sync)"}`);
 

@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from loguru import logger
 import traceback
 
-router = APIRouter(prefix="/api/extract", tags=["extract"])
+router = APIRouter(prefix="/extract", tags=["extract"])
 
 class ExtractRequest(BaseModel):
     payload: str

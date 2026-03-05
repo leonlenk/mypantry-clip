@@ -175,7 +175,7 @@ Extract the recipe into the specified JSON format.
     if (authMode === "cloud") {
         // Cloud Mode: Proxy through our FastAPI backend
         const apiBase = await getApiBase();
-        fetchUrl = `${apiBase}/api/extract/`;
+        fetchUrl = `${apiBase}/extract/`;
         fetchHeaders = {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${apiKey}`
@@ -490,7 +490,7 @@ Provide the precise JSON response.
 
     if (authMode === "cloud") {
         const apiBase = await getApiBase();
-        fetchUrl = `${apiBase}/api/substitute/`;
+        fetchUrl = `${apiBase}/substitute/`;
         fetchHeaders = {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${apiKey}`,

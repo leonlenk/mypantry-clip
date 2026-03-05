@@ -1,14 +1,19 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, APIRouter
+from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from src.utils.logger import setup_logging
 from src.config import settings
-from src.routers import extract, substitute, auth, sync, privacy
+from src.routers import extract, substitute, auth, sync, privacy, home
 from loguru import logger
 import uvicorn
 
 setup_logging()
 
-app = FastAPI(title="MyPantry Cloud API")
+app = FastAPI(
+    title="MyPantry Cloud API",
+    docs_url="/api/docs",
+    openapi_url="/api/openapi.json"
+)
 
 @app.on_event("startup")
 def startup_event():
@@ -28,19 +33,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(extract.router)
-app.include_router(substitute.router)
-app.include_router(sync.router)
-app.include_router(auth.router, prefix="/oauth", tags=["oauth"])
-app.include_router(privacy.router)
+api_router = APIRouter(prefix="/api")
+api_router.include_router(extract.router)
+api_router.include_router(substitute.router)
+api_router.include_router(sync.router)
+api_router.include_router(auth.router, prefix="/oauth", tags=["oauth"])
 
-from fastapi.responses import HTMLResponse
-
-@app.get("/")
-def read_root():
-    return {"message": "Welcome to the MyPantry Cloud API."}
-
-@app.get("/auth/callback", response_class=HTMLResponse)
+@api_router.get("/auth/callback", response_class=HTMLResponse)
 def auth_callback():
     return """
     <!DOCTYPE html>
@@ -82,6 +81,10 @@ def auth_callback():
     </body>
     </html>
     """
+
+app.include_router(api_router)
+app.include_router(privacy.router)
+app.include_router(home.router)
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

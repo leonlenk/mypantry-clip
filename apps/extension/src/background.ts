@@ -443,7 +443,7 @@ chrome.runtime.onInstalled.addListener((details) => {
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    // ── Tab-Capture Auth: the content script on mypantry.dev/auth/callback ──
+    // ── Tab-Capture Auth: the content script on mypantry.dev/api/auth/callback ──
     // forwards the Supabase session it read from localStorage. We persist the
     // tokens, close the login tab, and notify the setup page to advance.
     if (message.type === 'AUTH_SESSION_CAPTURED') {
@@ -510,6 +510,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             isActive: !!active,
             status: active ? active.status : null
         });
+        return true;
+    }
+
+    if (message.type === 'GET_ALL_EXTRACTIONS') {
+        sendResponse({ extractions: activeExtractions });
         return true;
     }
 

@@ -8,7 +8,7 @@ from loguru import logger
 from typing import Dict, Any
 import traceback
 
-router = APIRouter(prefix="/api/substitute", tags=["substitute"])
+router = APIRouter(prefix="/substitute", tags=["substitute"])
 
 class SubstituteRequest(BaseModel):
     recipe_context: Dict[str, Any]
