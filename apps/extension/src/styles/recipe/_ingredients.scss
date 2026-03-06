@@ -260,3 +260,118 @@
         }
     }
 }
+
+// ── Mobile slide-over panel ──────────────────────────────────────────────────
+// On narrow screens the ingredients section becomes a fixed panel sliding in
+// from the left. The FAB (bottom-left) acts as the toggle and slides with it.
+
+// Hidden by default on desktop
+#ingredients-backdrop {
+    display: none;
+}
+
+#ingredients-fab {
+    display: none;
+}
+
+@media (max-width: 767px) {
+
+    // CSS custom property so panel width and FAB offset stay in sync
+    :root {
+        --panel-width: min(85vw, 380px);
+    }
+
+    // Backdrop — tap to close
+    #ingredients-backdrop {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.35);
+        z-index: 200;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+
+        &.open {
+            display: block;
+            opacity: 1;
+        }
+    }
+
+    .ingredients-section {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100dvh;
+        width: var(--panel-width);
+        max-height: none;
+        border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+        z-index: 210;
+        transform: translateX(-100%);
+        transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        overflow-y: auto;
+        // Contain scroll so it doesn't bleed through to the page on iOS
+        overscroll-behavior: contain;
+        // GPU-composite from the start to avoid paint flashes
+        will-change: transform;
+        background: var(--color-surface);
+        box-shadow: 4px 0 32px rgba(0, 0, 0, 0.15);
+
+        &.panel-open {
+            transform: translateX(0);
+        }
+    }
+
+    // FAB — starts bottom-left, slides to the right edge of the panel when open
+    #ingredients-fab {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        position: fixed;
+        bottom: 1.75rem;
+        left: 1.75rem; // closed position
+        height: 40px;
+        padding: 0 var(--spacing-md);
+        border-radius: var(--radius-md);
+        background-color: var(--color-surface);
+        color: var(--color-accent);
+        border: 1px solid var(--color-border);
+        box-shadow: var(--shadow-md);
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        // Match the panel slide animation exactly
+        transition:
+            left 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+            background-color 0.2s ease,
+            color 0.2s ease,
+            border-color 0.2s ease;
+        z-index: 220; // above the panel so it's always tappable
+
+        &:hover {
+            background-color: var(--color-accent);
+            color: white;
+            border-color: var(--color-accent);
+        }
+    }
+
+    // FAB stays anchored at bottom-left at all times.
+    // The panel gets padding-bottom so the last ingredient scrolls clear of it.
+    body.ingredients-open #ingredients-fab {
+        background-color: var(--color-accent);
+        color: white;
+        border-color: var(--color-accent);
+    }
+
+    // Enough bottom padding that the last ingredient item scrolls fully into
+    // view above the FAB (40px button + 1.75rem bottom margin ≈ 68px).
+    .ingredients-section {
+        padding-bottom: 80px;
+    }
+
+    // Suppress transitions on first paint so the panel doesn't slide in/out
+    // during initial CSS application. JS removes this class after first paint.
+    body:not(.page-ready) .ingredients-section,
+    body:not(.page-ready) #ingredients-fab {
+        transition: none !important;
+    }
+}

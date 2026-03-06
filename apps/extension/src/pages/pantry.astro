@@ -3,6 +3,7 @@ import "../styles/global.scss";
 import "../styles/pantry.scss";
 import TopBar from "../components/pantry/TopBar.astro";
 import RecipeGrid from "../components/pantry/RecipeGrid.astro";
+import ScrollTopButton from "../components/shared/ScrollTopButton.astro";
 ---
 
 <!DOCTYPE html>
@@ -19,6 +20,8 @@ import RecipeGrid from "../components/pantry/RecipeGrid.astro";
         <RecipeGrid />
       </main>
     </div>
+
+    <ScrollTopButton />
 
     <script>
       import "../scripts/pantry/pantryController";

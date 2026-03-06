@@ -6,6 +6,7 @@ const editIcon =
     feather.icons["edit-3"]?.toSvg({ width: 16, height: 16 }) || "";
 const sparkleIcon =
     feather.icons["zap"]?.toSvg({ width: 16, height: 16 }) || "";
+const listIcon = feather.icons["list"]?.toSvg({ width: 16, height: 16 }) || "";
 ---
 
 <!-- Loading + Error states live outside the article so they're always visible -->
@@ -117,3 +118,11 @@ const sparkleIcon =
         </section>
     </div>
 </article>
+
+<!-- Mobile ingredients panel backdrop (click-away to close) -->
+<div id="ingredients-backdrop"></div>
+
+<!-- Mobile FAB: opens the ingredients slide-over panel -->
+<button id="ingredients-fab" aria-label="Show ingredients">
+    <span set:html={listIcon}></span>
+</button>

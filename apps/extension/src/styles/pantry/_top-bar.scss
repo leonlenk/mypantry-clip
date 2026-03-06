@@ -202,32 +202,43 @@
         align-items: stretch;
         gap: var(--spacing-md);
 
-        .left-section,
+        // Stacking order: filters → actions/tags → search
+        .left-section {
+            order: 0;
+            justify-content: center;
+        }
+
         .right-section {
+            order: 1;
             justify-content: center;
         }
 
         .center-section {
+            order: 2;
             max-width: none;
-            order: -1;
         }
     }
 }
 
 @media (max-width: 600px) {
-    .top-bar .top-row .filters ul {
-        flex-wrap: wrap;
-        border-radius: 12px;
-        padding: 8px;
+    .top-bar .top-row {
+        .center-section .search-wrap {
 
-        li {
-            flex: 1;
-            min-width: 80px;
-            text-align: center;
+            // Shorten placeholder on very narrow screens so it doesn't clip
+            input::placeholder {
+                font-size: 0.85rem;
+            }
+
+            // Make Search button slightly more compact
+            button.primary {
+                padding: 0 1.2rem;
+                font-size: 0.85rem;
+            }
         }
 
-        .filter-btn {
-            width: 100%;
+        .filters .filter-btn {
+            padding: 0 0.9rem;
+            font-size: 0.85rem;
         }
     }
 }

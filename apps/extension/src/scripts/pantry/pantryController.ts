@@ -48,6 +48,34 @@ let currentFilter = localStorage.getItem("pantryFilter") || "all";
 let currentTagFilter = localStorage.getItem("pantryTagFilter") || "";
 let activeExtractions: Record<string, { status: string; title: string }> = {};
 
+// Shared IntersectionObserver: adds .in-view to each card when it is ~150px
+// from entering the viewport. Re-created on every render so stale entries
+// from a previous render don't linger.
+let cardObserver: IntersectionObserver | null = null;
+
+function getCardObserver(): IntersectionObserver {
+    if (cardObserver) {
+        cardObserver.disconnect();
+    }
+    cardObserver = new IntersectionObserver(
+        (entries) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    (entry.target as HTMLElement).classList.add("in-view");
+                    cardObserver!.unobserve(entry.target);
+                }
+            });
+        },
+        {
+            // Pre-trigger 150px before the card enters view so the
+            // animation finishes right as the card scrolls into sight.
+            rootMargin: "150px 0px",
+            threshold: 0,
+        }
+    );
+    return cardObserver;
+}
+
 // ─── Startup ─────────────────────────────────────────────────────────────────
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -168,6 +196,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     wireExtractionListener();
     wireSearchHandlers();
     wireImportExport();
+
+    // Enable animations after first paint to prevent layout-shift flashes
+    // (e.g. fadeUp on recipe cards firing before the grid is stable on mobile).
+    requestAnimationFrame(() =>
+        requestAnimationFrame(() => document.body.classList.add("page-ready"))
+    );
 });
 
 // ─── Extraction live-update listener ────────────────────────────────────────
@@ -371,12 +405,28 @@ function renderRecipes(recipes: Recipe[]) {
         const isNew = recipe.createdAt && Date.now() - recipe.createdAt < 6000;
         if (isNew) card.classList.add("highlight-new");
 
-        card.style.animationDelay = `${index * 0.05}s`;
         (card.style as any).viewTransitionName = `card-${recipe.id}`;
 
         card.innerHTML = buildRecipeCardHtml(recipe);
         wireCardEvents(card, recipe);
         grid.appendChild(card);
+    });
+
+    // Set up the viewport observer so each card fades in right before it
+    // enters the viewport rather than after a pre-computed stagger delay.
+    const observer = getCardObserver();
+    // rAF gives the browser one layout pass so getBoundingClientRect is accurate.
+    requestAnimationFrame(() => {
+        grid!.querySelectorAll<HTMLElement>(".recipe-card:not(.skeleton)").forEach((card) => {
+            const rect = card.getBoundingClientRect();
+            // Cards already within 150px of the viewport get .in-view immediately
+            // so they don't briefly flash as transparent before the observer fires.
+            if (rect.top < window.innerHeight + 150) {
+                card.classList.add("in-view");
+            } else {
+                observer.observe(card);
+            }
+        });
     });
 }
 
@@ -390,6 +440,19 @@ function wireCardEvents(card: HTMLElement, recipe: Recipe) {
     card.querySelector(".view-btn")?.addEventListener("click", (e) => {
         e.stopPropagation();
     });
+
+    // Mobile image preview: the .preview-toggle-btn is shown only on touch devices
+    // (hidden via CSS on desktop where :hover drives the flip instead).
+    // Tapping it toggles .is-flipped on the flip container and .active on the button.
+    const previewBtn = card.querySelector<HTMLButtonElement>(".preview-toggle-btn");
+    const flipContainer = card.querySelector<HTMLElement>(".content-flip-container");
+    if (previewBtn && flipContainer) {
+        previewBtn.addEventListener("click", (e) => {
+            e.stopPropagation(); // prevent card navigation
+            const isFlipped = flipContainer.classList.toggle("is-flipped");
+            previewBtn.classList.toggle("active", isFlipped);
+        });
+    }
 
     // Favorite toggle — optimistic UI update
     card.querySelector(".favorite-btn")?.addEventListener("click", async (e) => {

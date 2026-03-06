@@ -58,6 +58,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     wireTitleEdit();
     wireDelegatedHandlers();
+    wireMobileIngredientPanel();
+
+    // Enable CSS transitions only after the first paint so the ingredients panel
+    // doesn't animate from off-screen during initial layout (FOUC prevention).
+    requestAnimationFrame(() =>
+        requestAnimationFrame(() => document.body.classList.add("page-ready"))
+    );
 });
 
 // ─── Error / loading state ────────────────────────────────────────────────────
@@ -170,6 +177,43 @@ function wireDelegatedHandlers() {
             }
         }
     });
+}
+
+// ─── Mobile ingredient slide-over panel ──────────────────────────────────────
+
+function wireMobileIngredientPanel() {
+    // Only wire on touch/narrow screens — the media query hides the FAB on
+    // desktop so this function is a no-op when the elements don't exist.
+    const fab = document.getElementById("ingredients-fab");
+    const panel = document.querySelector<HTMLElement>(".ingredients-section");
+    const backdrop = document.getElementById("ingredients-backdrop");
+    if (!fab || !panel || !backdrop) return;
+
+    function openPanel() {
+        panel!.classList.add("panel-open");
+        backdrop!.classList.add("open");
+        document.body.classList.add("ingredients-open"); // drives FAB slide via CSS
+        document.body.style.overflow = "hidden";
+    }
+
+    function closePanel() {
+        panel!.classList.remove("panel-open");
+        backdrop!.classList.remove("open");
+        document.body.classList.remove("ingredients-open");
+        document.body.style.overflow = "";
+    }
+
+    // FAB toggles: open when closed, close when open
+    fab.addEventListener("click", () => {
+        if (document.body.classList.contains("ingredients-open")) {
+            closePanel();
+        } else {
+            openPanel();
+        }
+    });
+
+    // Backdrop tap also closes
+    backdrop.addEventListener("click", closePanel);
 }
 
 function getCurrentMultiplier(): number {

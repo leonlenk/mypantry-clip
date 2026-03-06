@@ -12,14 +12,23 @@
             var(--color-bg) 100%);
     border: 1px solid rgba(0, 0, 0, 0.03);
     box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05);
+    // Stay invisible until JS marks the page as ready — prevents fadeUp
+    // firing before the grid is stable on mobile (layout-shift flash).
     opacity: 0;
-    animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     position: relative;
     overflow: hidden;
     cursor: pointer;
 
-    &.highlight-new {
-        animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards, highlightNew 4s ease-out 0.6s;
+    // Animation triggered by IntersectionObserver (.in-view added by JS)
+    // so cards only fade in when they are about to enter the viewport —
+    // no more stale stagger delays for off-screen cards.
+    &.in-view {
+        animation: fadeUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    &.highlight-new.in-view {
+        animation: fadeUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards,
+            highlightNew 4s ease-out 0.4s;
     }
 
     .card-back {
@@ -159,7 +168,10 @@
             transform-style: preserve-3d;
         }
 
-        &:hover .content-flip-inner {
+        // CSS hover for desktop (unchanged behaviour)
+        &:hover .content-flip-inner,
+        // JS-toggled class for mobile tap (see pantryController)
+        &.is-flipped .content-flip-inner {
             transform: rotateX(180deg);
         }
 
@@ -193,8 +205,47 @@
 
     .card-footer {
         display: flex;
-        justify-content: flex-end;
+        justify-content: space-between;
+        align-items: center;
         margin-top: var(--spacing-md);
+
+        // Image-preview toggle — only visible on touch devices.
+        // On desktop the CSS :hover flip handles this instead.
+        .preview-toggle-btn {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            background: none;
+            border: 1px solid var(--color-border);
+            color: var(--color-text-muted);
+            font-size: 0.78rem;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+
+            &:hover,
+            &.active {
+                background-color: var(--color-surface);
+                color: var(--color-accent);
+                border-color: var(--color-accent);
+            }
+        }
+    }
+
+    // On primary-touch devices show the preview button; hide the CSS hover flip
+    // so the two mechanisms don't fight each other.
+    @media (hover: none) and (pointer: coarse) {
+        .card-footer .preview-toggle-btn {
+            display: flex;
+        }
+
+        // Disable CSS :hover flip so only the JS button can trigger it
+        .content-flip-container:hover .content-flip-inner {
+            transform: none;
+        }
     }
 
     &::after {

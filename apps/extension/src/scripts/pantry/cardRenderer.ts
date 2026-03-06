@@ -109,6 +109,10 @@ export function buildRecipeCardHtml(recipe: Recipe): string {
             ? `<a href="${recipe.url}" target="_blank" class="view-btn">View Source →</a>`
             : "<span></span>"
         }
+            ${recipe.image
+            ? `<button class="preview-toggle-btn" title="Preview image">${safeIcon("image", { width: 16, height: 16 })}</button>`
+            : ""
+        }
         </div>
     `;
 }

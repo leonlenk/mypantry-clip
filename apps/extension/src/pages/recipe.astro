@@ -4,6 +4,7 @@ import "../styles/recipe.scss";
 import RecipeTopBar from "../components/recipe/RecipeTopBar.astro";
 import RecipeArticle from "../components/recipe/RecipeArticle.astro";
 import SubstitutionModal from "../components/recipe/SubstitutionModal.astro";
+import ScrollTopButton from "../components/shared/ScrollTopButton.astro";
 ---
 
 <!DOCTYPE html>
@@ -23,6 +24,7 @@ import SubstitutionModal from "../components/recipe/SubstitutionModal.astro";
         </div>
 
         <SubstitutionModal />
+        <ScrollTopButton />
 
         <script>
             import "../scripts/recipe/recipeController";
