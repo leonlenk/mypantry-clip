@@ -79,10 +79,10 @@ export async function decryptData(
         const decryptedBuffer = await window.crypto.subtle.decrypt(
             {
                 name: "AES-GCM",
-                iv: iv,
+                iv: iv as BufferSource,
             },
             key,
-            ciphertextStr
+            ciphertextStr as BufferSource
         );
 
         const dec = new TextDecoder();
