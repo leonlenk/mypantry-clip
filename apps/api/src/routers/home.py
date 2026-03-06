@@ -371,7 +371,7 @@ _HOME_HTML = """<!DOCTYPE html>
             <span class="brand-name">MyPantry</span>
         </a>
         <nav class="nav-links">
-            <a href="https://github.com/leonlenk/recipe-ai" target="_blank" rel="noopener">GitHub</a>
+            <a href="https://github.com/leonlenk/my-pantry" target="_blank" rel="noopener">GitHub</a>
             <a href="/privacy">Privacy</a>
         </nav>
     </header>
@@ -426,7 +426,7 @@ _HOME_HTML = """<!DOCTYPE html>
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
                     </div>
                     <h3>BYOK Privacy</h3>
-                    <p>Bring Your Own Key mode means your LLM API keys are AES-256-GCM encrypted locally in your browser. We never see your raw key material.</p>
+                    <p>Bring Your Own Key mode means your LLM API keys are AES-256-GCM encrypted locally in your browser. When decrypted, they are held securely in memory for only up to 1 hour to avoid repeated password prompts. We never see your raw key material.</p>
                     <div class="feature-tag">window.crypto.subtle</div>
                 </div>
 
@@ -457,7 +457,7 @@ _HOME_HTML = """<!DOCTYPE html>
     <footer>
         <div class="footer-brand">MyPantry</div>
         <div class="footer-links">
-            <a href="https://github.com/leonlenk/recipe-ai" target="_blank" rel="noopener">GitHub</a>
+            <a href="https://github.com/leonlenk/my-pantry" target="_blank" rel="noopener">GitHub</a>
             <a href="/privacy">Privacy Policy</a>
             <a href="mailto:support@mypantry.dev">Contact Support</a>
         </div>

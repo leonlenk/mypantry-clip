@@ -8,6 +8,9 @@ import { saveRecipeLocally, getRecipe, getAllRecipes } from "./utils/db";
 
 let creating: Promise<void> | null;
 
+// Temporary in-memory cache for the decrypted BYOK API key (1 hour expiration)
+let cachedDecryptedApiKey: { key: string, expiresAt: number } | null = null;
+
 // Track active extractions by normalized URL
 interface ExtractionState {
     status: string;
@@ -594,6 +597,34 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             }
         })();
         return true;
+    }
+
+    if (message.type === 'CACHE_API_KEY') {
+        const { apiKey } = message;
+        // Cache for 1 hour
+        cachedDecryptedApiKey = {
+            key: apiKey,
+            expiresAt: Date.now() + 60 * 60 * 1000
+        };
+        sendResponse({ success: true });
+        return false;
+    }
+
+    if (message.type === 'GET_CACHED_API_KEY') {
+        if (cachedDecryptedApiKey && Date.now() < cachedDecryptedApiKey.expiresAt) {
+            sendResponse({ apiKey: cachedDecryptedApiKey.key });
+        } else {
+            // Expired or null
+            cachedDecryptedApiKey = null;
+            sendResponse({ apiKey: null });
+        }
+        return false;
+    }
+
+    if (message.type === 'CLEAR_CACHED_API_KEY') {
+        cachedDecryptedApiKey = null;
+        sendResponse({ success: true });
+        return false;
     }
 });
 

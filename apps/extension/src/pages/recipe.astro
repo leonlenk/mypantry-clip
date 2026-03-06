@@ -410,21 +410,31 @@ const sparkleIcon =
 
                             if (!apiKey) {
                                 if (encryptedApiKey) {
+                                    // Check if we have a cached decrypted key in the background
+                                    const cacheResponse =
+                                        await chrome.runtime.sendMessage({
+                                            type: "GET_CACHED_API_KEY",
+                                        });
+                                    if (cacheResponse && cacheResponse.apiKey) {
+                                        apiKey = cacheResponse.apiKey;
+                                    } else {
+                                        if (subStatusText)
+                                            subStatusText.textContent =
+                                                "Error: API key is encrypted. Please enter your master password in the extension popup first to unlock it.";
+                                        return;
+                                    }
+                                } else {
+                                    console.error(
+                                        "[Substitution] API key not found for provider:",
+                                        provider
+                                    );
                                     if (subStatusText)
                                         subStatusText.textContent =
-                                            "Error: API key is encrypted. Please enter your master password in the extension popup first to unlock it.";
+                                            "Error: API key for " +
+                                            provider +
+                                            " not set.";
                                     return;
                                 }
-                                console.error(
-                                    "[Substitution] API key not found for provider:",
-                                    provider
-                                );
-                                if (subStatusText)
-                                    subStatusText.textContent =
-                                        "Error: API key for " +
-                                        provider +
-                                        " not set.";
-                                return;
                             }
 
                             chrome.tabs.query(

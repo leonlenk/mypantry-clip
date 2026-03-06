@@ -46,6 +46,12 @@ import MainView from "../components/popup/MainView.astro";
               if (supabaseUrl && supabaseAnonKey) {
                 chrome.storage.local.set({ supabaseUrl, supabaseAnonKey });
               }
+
+              // Show settings gear if BYOK
+              if (!data.supabaseToken) {
+                const settingsBtn = document.getElementById("settings-btn");
+                if (settingsBtn) settingsBtn.classList.remove("hidden");
+              }
             }
           }
         } catch (e) {
@@ -67,11 +73,14 @@ import MainView from "../components/popup/MainView.astro";
             "llmProvider",
             "llmModel",
           ]);
+          // Clear memory cache
+          chrome.runtime.sendMessage({ type: "CLEAR_CACHED_API_KEY" });
           window.close(); // Next time popup opens, it will redirect to setup.html
         }
       });
 
       const openPantryBtn = document.getElementById("open-pantry-btn");
+      const visitHomepageBtn = document.getElementById("visit-homepage-btn");
       const extractBtn = document.getElementById("extract-btn");
       const passwordContainer = document.getElementById("password-container");
       const confirmExtractBtn = document.getElementById("confirm-extract-btn");
@@ -85,6 +94,44 @@ import MainView from "../components/popup/MainView.astro";
       const safeToCloseMsg = document.getElementById("safe-to-close-msg");
       const errorContainer = document.getElementById("error-container");
       const errorDetails = document.getElementById("error-details");
+
+      // Settings Elements
+      const settingsBtn = document.getElementById("settings-btn");
+      const btnBackSettings = document.getElementById("btn-back-settings");
+      const actionCard = document.querySelector(".action-card");
+      const settingsPanel = document.getElementById("settings-panel");
+
+      const settingsAuthPanel = document.getElementById("settings-auth-panel");
+      const btnBackSettingsAuth = document.getElementById(
+        "btn-back-settings-auth"
+      );
+      const inputSettingsAuthPassword = document.getElementById(
+        "input-settings-auth-password"
+      ) as HTMLInputElement | null;
+      const btnSubmitSettingsAuth = document.getElementById(
+        "btn-submit-settings-auth"
+      ) as HTMLButtonElement | null;
+      const settingsAuthStatus = document.getElementById(
+        "settings-auth-status"
+      );
+
+      let currentSettingsPassword = "";
+
+      import { initializeByokForm, loadByokSettings } from "../utils/byok";
+
+      initializeByokForm({
+        idPrefix: "popup-byok-",
+        onSaveSuccess: (provider: string, model: string, isNewKey: boolean) => {
+          setTimeout(() => {
+            if (actionCard && settingsPanel) {
+              settingsPanel.classList.add("hidden");
+              actionCard.classList.remove("hidden");
+            }
+          }, 600);
+        },
+        isSettingsMode: true,
+        getPassword: () => currentSettingsPassword,
+      });
 
       function addStatusMessage(
         text: string,
@@ -136,6 +183,117 @@ import MainView from "../components/popup/MainView.astro";
         }
       });
 
+      visitHomepageBtn?.addEventListener("click", () => {
+        if (typeof chrome !== "undefined" && chrome.tabs) {
+          chrome.tabs.create({ url: "https://mypantry.dev" });
+        } else {
+          window.open("https://mypantry.dev", "_blank");
+        }
+      });
+
+      // ------------- Settings Panel API -------------
+      settingsBtn?.addEventListener("click", async () => {
+        // Toggle behavior
+        if (actionCard?.classList.contains("hidden")) {
+          // It's open, so close it
+          settingsPanel?.classList.add("hidden");
+          settingsAuthPanel?.classList.add("hidden");
+          actionCard?.classList.remove("hidden");
+          return;
+        }
+
+        if (actionCard && (settingsPanel || settingsAuthPanel)) {
+          const storageResult = (await chrome.storage.local.get([
+            "encryptedApiKey",
+            "plaintextApiKey",
+          ])) as { encryptedApiKey?: any; plaintextApiKey?: string };
+          const hasEncryptedKey = !!storageResult.encryptedApiKey;
+
+          actionCard.classList.add("hidden");
+
+          if (hasEncryptedKey) {
+            settingsAuthPanel?.classList.remove("hidden");
+            if (inputSettingsAuthPassword) {
+              inputSettingsAuthPassword.value = "";
+              inputSettingsAuthPassword.focus();
+            }
+            if (settingsAuthStatus) settingsAuthStatus.classList.add("hidden");
+          } else {
+            settingsPanel?.classList.remove("hidden");
+            await loadByokSettings(
+              "popup-byok-",
+              storageResult.plaintextApiKey || ""
+            );
+          }
+        }
+      });
+
+      btnBackSettingsAuth?.addEventListener("click", () => {
+        if (actionCard && settingsAuthPanel) {
+          settingsAuthPanel.classList.add("hidden");
+          actionCard.classList.remove("hidden");
+        }
+      });
+
+      btnSubmitSettingsAuth?.addEventListener("click", async () => {
+        const password = inputSettingsAuthPassword?.value || "";
+        if (!password) {
+          if (settingsAuthStatus) {
+            settingsAuthStatus.textContent = "Password required.";
+            settingsAuthStatus.classList.remove("hidden");
+          }
+          return;
+        }
+
+        if (btnSubmitSettingsAuth) {
+          btnSubmitSettingsAuth.disabled = true;
+          btnSubmitSettingsAuth.textContent = "Unlocking...";
+        }
+
+        try {
+          const storageResult = (await chrome.storage.local.get([
+            "encryptedApiKey",
+          ])) as { encryptedApiKey?: any };
+          if (!storageResult.encryptedApiKey)
+            throw new Error("No encrypted key found.");
+
+          const decryptedKey = await decryptData(
+            {
+              ciphertext: storageResult.encryptedApiKey.ciphertext,
+              iv: storageResult.encryptedApiKey.iv,
+              salt: storageResult.encryptedApiKey.salt,
+            },
+            password
+          );
+
+          currentSettingsPassword = password; // Save it for BYOK form to use later
+
+          // Success! Show settings panel.
+          settingsAuthPanel?.classList.add("hidden");
+          settingsPanel?.classList.remove("hidden");
+
+          await loadByokSettings("popup-byok-", decryptedKey);
+        } catch (e) {
+          console.error("Settings Unlock Error", e);
+          if (settingsAuthStatus) {
+            settingsAuthStatus.textContent = "Incorrect password.";
+            settingsAuthStatus.classList.remove("hidden");
+          }
+        } finally {
+          if (btnSubmitSettingsAuth) {
+            btnSubmitSettingsAuth.disabled = false;
+            btnSubmitSettingsAuth.textContent = "Unlock Settings";
+          }
+        }
+      });
+
+      btnBackSettings?.addEventListener("click", () => {
+        if (actionCard && settingsPanel) {
+          settingsPanel.classList.add("hidden");
+          actionCard.classList.remove("hidden");
+        }
+      });
+
       extractBtn?.addEventListener("click", async () => {
         if (extractBtn) {
           (extractBtn as HTMLButtonElement).disabled = true;
@@ -149,17 +307,19 @@ import MainView from "../components/popup/MainView.astro";
               "supabaseToken",
               "llmModel",
               "llmProvider",
+              "encryptedApiKey",
             ]);
 
           const hasCloudAuth = !!storageResult.supabaseToken;
           const hasPlaintextKey = !!storageResult.plaintextApiKey;
+          const hasEncryptedKey = !!storageResult.encryptedApiKey;
+
+          const llmModel = storageResult.llmModel || "gemini-2.5-flash";
+          const llmProvider =
+            storageResult.llmProvider ||
+            (hasCloudAuth ? "google" : "anthropic");
 
           if (hasCloudAuth || hasPlaintextKey) {
-            const llmModel = storageResult.llmModel || "gemini-2.5-flash";
-            const llmProvider =
-              storageResult.llmProvider ||
-              (hasCloudAuth ? "google" : "anthropic");
-
             // Show status immediately since we bypassed the password button
             extractBtn?.classList.add("hidden");
             passwordContainer?.classList.remove("hidden");
@@ -186,6 +346,34 @@ import MainView from "../components/popup/MainView.astro";
               addStatusMessage(`Error: ${msg}`, true);
             }
             return;
+          } else if (hasEncryptedKey) {
+            // Check if we have a cached decrypted key in the background
+            const cacheResponse = await chrome.runtime.sendMessage({
+              type: "GET_CACHED_API_KEY",
+            });
+            if (cacheResponse && cacheResponse.apiKey) {
+              extractBtn?.classList.add("hidden");
+              passwordContainer?.classList.remove("hidden");
+              if (passwordInput) passwordInput.classList.add("hidden");
+              if (confirmExtractBtn) confirmExtractBtn.classList.add("hidden");
+
+              addStatusMessage("Starting extraction (using cached key)...");
+
+              try {
+                await executeExtraction(
+                  cacheResponse.apiKey as string,
+                  llmModel as string,
+                  llmProvider as string,
+                  "byok"
+                );
+              } catch (err: any) {
+                console.error("Extraction error", err);
+                let msg = err.message || "Unknown error occurred";
+                if (msg.length > 80) msg = msg.substring(0, 80) + "...";
+                addStatusMessage(`Error: ${msg}`, true);
+              }
+              return;
+            }
           }
         } catch (e: any) {
           console.error("Storage error", e);
@@ -233,6 +421,14 @@ import MainView from "../components/popup/MainView.astro";
           }
 
           const apiKey = await decryptData(encryptedApiKey, password);
+
+          // Password was correct! Hide the input fields so only the loading status is visible.
+          if (passwordInput) passwordInput.classList.add("hidden");
+          if (confirmExtractBtn) confirmExtractBtn.classList.add("hidden");
+
+          // Cache it in the background for an hour
+          chrome.runtime.sendMessage({ type: "CACHE_API_KEY", apiKey });
+
           await executeExtraction(apiKey, llmModel, llmProvider, "byok");
         } catch (error: any) {
           console.error(error);
@@ -248,6 +444,8 @@ import MainView from "../components/popup/MainView.astro";
             // Only revert button if we didn't succeed, so they can try again if they want
             (confirmExtractBtn as HTMLButtonElement).disabled = false;
             confirmExtractBtn.textContent = "Confirm Extraction";
+            confirmExtractBtn.classList.remove("hidden");
+            if (passwordInput) passwordInput.classList.remove("hidden");
           }
         }
       });

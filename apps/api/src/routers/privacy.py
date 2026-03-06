@@ -315,8 +315,8 @@ _PRIVACY_HTML = """<!DOCTYPE html>
         <p>
             BYOK mode lets you use MyPantry without a cloud account. Your LLM API key is encrypted locally
             in your browser using <strong>AES-256-GCM</strong> via the Web Crypto API, keyed with a password
-            you create via PBKDF2. The raw key material is held only in ephemeral memory during an active
-            extraction and is immediately discarded afterward.
+            you create via PBKDF2. The raw key material is held only in ephemeral memory for up to 1 hour
+            after decryption to avoid repeated password prompts, and is cleared upon browser restart or logout.
         </p>
         <p>
             In BYOK mode, your API key is <strong>never transmitted to our servers</strong>. All LLM calls

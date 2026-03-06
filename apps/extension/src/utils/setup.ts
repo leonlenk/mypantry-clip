@@ -1,4 +1,4 @@
-import { encryptData } from "../utils/crypto";
+import { initializeByokForm } from "./byok";
 
 // Elements
 const stepLogin = document.getElementById("step-login");
@@ -8,169 +8,16 @@ const stepReady = document.getElementById("step-ready");
 
 const btnOauth = document.getElementById("btn-oauth-google");
 const btnShowByok = document.getElementById("btn-show-byok");
-const byokForm = document.getElementById("byok-form");
-const inputApiKey = document.getElementById("input-api-key") as HTMLInputElement | null;
-const selectProvider = document.getElementById("select-provider") as HTMLSelectElement | null;
-const selectModel = document.getElementById("select-model") as HTMLSelectElement | null;
-const btnSubmitByok = document.getElementById("btn-submit-byok");
+const byokFormWrapper = document.getElementById("byok-form-wrapper");
 
-const hardcodedPricing: Record<string, string> = {
-    // Google
-    "models/gemini-2.5-flash": "Cheaper",
-    "models/gemini-2.0-flash": "Fast",
-    "models/gemini-2.5-pro": "Powerful, More Expensive",
-    "models/gemini-2.0-pro-exp": "Experimental",
-    // OpenAI
-    "gpt-4o-mini": "$0.15/1M in",
-    "o3-mini": "$1.10/1M in",
-    "gpt-4o": "$2.50/1M in",
-    // Claude
-    "claude-3-haiku-20240307": "$0.25/1M in",
-    "claude-3-5-haiku-20241022": "$0.80/1M in",
-    "claude-3-5-sonnet-20241022": "$3.00/1M in"
-};
-
-const hardcodedPricingSort: Record<string, number> = {
-    // Google
-    "models/gemini-2.5-flash": 1,
-    "models/gemini-2.0-flash": 2,
-    "models/gemini-2.5-pro": 3,
-    "models/gemini-2.0-pro-exp": 4,
-    // OpenAI
-    "gpt-4o-mini": 0.15,
-    "o3-mini": 1.10,
-    "gpt-4o": 2.50,
-    // Claude
-    "claude-3-haiku-20240307": 0.25,
-    "claude-3-5-haiku-20241022": 0.80,
-    "claude-3-5-sonnet-20241022": 3.00
-};
-
-async function fetchModels() {
-    if (!selectProvider || !selectModel) return;
-
-    const provider = selectProvider.value;
-    const apiKey = inputApiKey?.value || "";
-
-    // OpenRouter doesn't strictly need an API key to fetch the public models list
-    if (provider !== "openrouter" && !apiKey) {
-        selectModel.innerHTML = `<option value="">Enter API Key to load models...</option>`;
-        selectModel.disabled = true;
-        return;
-    }
-
-    selectModel.innerHTML = `<option value="">Loading models...</option>`;
-    selectModel.disabled = true;
-
-    try {
-        let optionsHtml = "";
-
-        if (provider === "openrouter") {
-            const res = await fetch("https://openrouter.ai/api/v1/models");
-            if (!res.ok) throw new Error("Failed to load models");
-            const data = await res.json();
-
-            // OpenRouter provides pricing! Sort by prompt price.
-            optionsHtml = data.data.sort((a: any, b: any) =>
-                parseFloat(a.pricing?.prompt || "999") - parseFloat(b.pricing?.prompt || "999")
-            ).map((m: any) => {
-                const promptPrice = (parseFloat(m.pricing?.prompt || "0") * 1000000).toFixed(2);
-                const compPrice = (parseFloat(m.pricing?.completion || "0") * 1000000).toFixed(2);
-                const priceLabel = promptPrice === "0.00" && compPrice === "0.00"
-                    ? "Free"
-                    : `$${promptPrice} in / $${compPrice} out`;
-                return `<option value="${m.id}">${m.name} (${priceLabel})</option>`;
-            }).join("");
-
-        } else if (provider === "google") {
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
-            if (!res.ok) throw new Error("Invalid API Key or network error");
-            const data = await res.json();
-
-            // Filter to models that support text generation
-            const validModels = data.models.filter((m: any) =>
-                m.supportedGenerationMethods?.includes("generateContent")
-            ).sort((a: any, b: any) =>
-                (hardcodedPricingSort[a.name] ?? 999) - (hardcodedPricingSort[b.name] ?? 999)
-            );
-
-            optionsHtml = validModels.map((m: any) => {
-                // Return just the model name without "models/" if possible, but Google API usually accepts both. Let's send the ID they provide.
-                const val = m.name.replace("models/", "");
-                const priceLabel = hardcodedPricing[m.name] ? ` (${hardcodedPricing[m.name]})` : "";
-                return `<option value="${val}">${m.displayName || val}${priceLabel}</option>`;
-            }).join("");
-
-        } else if (provider === "openai") {
-            const res = await fetch("https://api.openai.com/v1/models", {
-                headers: { "Authorization": `Bearer ${apiKey}` }
-            });
-            if (!res.ok) throw new Error("Invalid API Key or network error");
-            const data = await res.json();
-
-            // OpenAI returns hundreds of models, let's filter to chat models roughly
-            const validModels = data.data.filter((m: any) =>
-                m.id.startsWith("gpt-") || m.id.startsWith("o1") || m.id.startsWith("o3")
-            ).sort((a: any, b: any) =>
-                (hardcodedPricingSort[a.id] ?? 999) - (hardcodedPricingSort[b.id] ?? 999)
-            );
-
-            optionsHtml = validModels.map((m: any) => {
-                const priceLabel = hardcodedPricing[m.id] ? ` (${hardcodedPricing[m.id]})` : "";
-                return `<option value="${m.id}">${m.id}${priceLabel}</option>`;
-            }).join("");
-
-        } else if (provider === "claude") {
-            const res = await fetch("https://api.anthropic.com/v1/models", {
-                headers: {
-                    "x-api-key": apiKey,
-                    "anthropic-version": "2023-06-01",
-                    "anthropic-dangerous-direct-browser-access": "true"
-                }
-            });
-            if (!res.ok) throw new Error("Invalid API Key or network error");
-            const data = await res.json();
-
-            optionsHtml = data.data.sort((a: any, b: any) =>
-                (hardcodedPricingSort[a.id] ?? 999) - (hardcodedPricingSort[b.id] ?? 999)
-            ).map((m: any) => {
-                const priceLabel = hardcodedPricing[m.id] ? ` (${hardcodedPricing[m.id]})` : "";
-                return `<option value="${m.id}">${m.display_name || m.id}${priceLabel}</option>`;
-            }).join("");
-        }
-
-        if (optionsHtml) {
-            selectModel.innerHTML = optionsHtml;
-            selectModel.disabled = false;
-        } else {
-            selectModel.innerHTML = `<option value="">No valid models found</option>`;
-            selectModel.disabled = false;
-        }
-
-    } catch (err) {
-        selectModel.innerHTML = `<option value="">Error loading models. Check API Key.</option>`;
-        selectModel.disabled = false;
-    }
-}
-
-// Initialize logic
-if (selectProvider) {
-    selectProvider.addEventListener("change", (e) => {
-        const target = e.target as HTMLSelectElement;
-        fetchModels();
-    });
-}
-
-if (inputApiKey) {
-    inputApiKey.addEventListener("blur", () => {
-        fetchModels();
-    });
-}
-
-// Initial fetch attempt (in case of OpenRouter default, or autocomplete)
-setTimeout(() => {
-    fetchModels();
-}, 100);
+// Initialize the shared BYOK form logic for the setup page
+initializeByokForm({
+    idPrefix: "setup-byok-",
+    onSaveSuccess: async (provider: string, model: string, isNewKey: boolean) => {
+        await doPostModelSync();
+    },
+    isSettingsMode: false
+});
 
 const progressBar = document.getElementById("progress-bar-fill");
 const progressText = document.getElementById("progress-text");
@@ -185,29 +32,11 @@ function showState(stateElement: HTMLElement | null) {
 
 // 1. BYOK Flow
 btnShowByok?.addEventListener("click", () => {
-    byokForm?.classList.toggle("hidden");
-    if (!byokForm?.classList.contains("hidden")) inputApiKey?.focus();
-});
-
-btnSubmitByok?.addEventListener("click", async () => {
-    const key = inputApiKey?.value;
-    if (!key) return;
-
-    const provider = selectProvider?.value || "google";
-    const model = selectModel?.value || "gemini-2.5-flash";
-
-    await chrome.storage.local.set({
-        plaintextApiKey: key,
-        encryptedApiKey: null, // Clear any legacy encrypted keys just in case
-        supabaseToken: null, // Ensure cloud auth is totally wiped
-        supabaseRefreshToken: null,
-        llmProvider: provider,
-        llmModel: model,
-        // BYOK users still need an apiUrl for cloud sync to work if they later sign in
-        apiUrl: import.meta.env.PUBLIC_API_URL ?? "http://127.0.0.1:8000",
-    });
-
-    await doPostModelSync();
+    byokFormWrapper?.classList.toggle("hidden");
+    if (!byokFormWrapper?.classList.contains("hidden")) {
+        const inputApiKey = document.getElementById("setup-byok-input-api-key") as HTMLInputElement | null;
+        inputApiKey?.focus();
+    }
 });
 
 // 2. OAuth Flow — Tab-Capture strategy (no `identity` permission required)

@@ -1,0 +1,105 @@
+---
+export interface Props {
+    // We can pass optional prefixes or identifiers if needed, but for now we'll rely on
+    // standard IDs so the TS logic can easily find them.
+    idPrefix?: string;
+    showPassword?: boolean;
+}
+
+const { idPrefix = "byok-", showPassword = true } = Astro.props;
+---
+
+<div class="byok-form-container" style="text-align: left;">
+    <div style="margin-bottom: var(--spacing-sm);">
+        <label
+            for={`${idPrefix}select-provider`}
+            style="display: block; margin-bottom: 4px; font-size: 0.9rem;"
+        >
+            Provider
+        </label>
+        <select
+            id={`${idPrefix}select-provider`}
+            style="width: 100%; padding: 10px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background-color: var(--color-bg);"
+        >
+            <option value="google">Google (Gemini)</option>
+            <option value="claude">Anthropic (Claude)</option>
+            <option value="openai">OpenAI</option>
+            <option value="openrouter">OpenRouter</option>
+        </select>
+    </div>
+
+    <div style="margin-bottom: var(--spacing-sm);">
+        <label
+            for={`${idPrefix}input-api-key`}
+            style="display: block; margin-bottom: 4px; font-size: 0.9rem;"
+        >
+            API Key
+        </label>
+        <input
+            type="password"
+            id={`${idPrefix}input-api-key`}
+            placeholder="Provider API Key..."
+            style="width: 100%; padding: 10px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background-color: var(--color-bg);"
+        />
+        <div
+            id={`${idPrefix}api-key-help`}
+            style="font-size: 0.75rem; color: var(--color-text-muted); margin-top: 4px;"
+            class="hidden"
+        >
+            Leave blank to keep your existing key.
+        </div>
+    </div>
+
+    {
+        showPassword && (
+            <div style="margin-bottom: var(--spacing-sm);">
+                <label
+                    for={`${idPrefix}input-password`}
+                    style="display: block; margin-bottom: 4px; font-size: 0.9rem;"
+                >
+                    Master Password{" "}
+                    <span style="font-weight: normal; color: var(--color-text-muted);">
+                        (Optional, encrypts key securely on device)
+                    </span>
+                </label>
+                <input
+                    type="password"
+                    id={`${idPrefix}input-password`}
+                    placeholder="Enter password..."
+                    style="width: 100%; padding: 10px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background-color: var(--color-bg);"
+                />
+            </div>
+        )
+    }
+
+    <div style="margin-bottom: var(--spacing-md);">
+        <label
+            for={`${idPrefix}select-model`}
+            style="display: block; margin-bottom: 4px; font-size: 0.9rem;"
+        >
+            Model
+        </label>
+        <select
+            id={`${idPrefix}select-model`}
+            disabled
+            style="width: 100%; padding: 10px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background-color: var(--color-bg);"
+        >
+            <option value="">Enter API Key to load models...</option>
+        </select>
+    </div>
+
+    <button
+        id={`${idPrefix}btn-submit`}
+        class="btn primary"
+        style="width: 100%;"
+    >
+        Save Key
+    </button>
+
+    <div
+        id={`${idPrefix}status-message`}
+        style="margin-top: 8px; font-size: 0.85rem; text-align: center; color: var(--color-accent);"
+        class="hidden"
+    >
+    </div>
+</div>
