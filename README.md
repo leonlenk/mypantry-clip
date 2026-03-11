@@ -1,5 +1,7 @@
 <div align="center">
-  <img src="general_assets/icon-chrome-store.png" alt="MyPantry Logo" width="128">
+  <a href="https://chromewebstore.google.com/detail/my-pantry/hhaplljlbkgehhomjkjdnadbjpcahglo" target="_blank">
+    <img src="general_assets/icon-chrome-store.png" alt="Add to Chrome" width="128">
+  </a>
 </div>
 
 # MyPantry
