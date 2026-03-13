@@ -327,7 +327,7 @@ function renderTags() {
     const recipe = recipeState.currentRecipe;
     if (!metaEl || !recipe) return;
 
-    const safeIcon = (name: string, opts = { width: 14, height: 14 }) =>
+    const safeIcon = (name: string, opts: Record<string, any> = { width: 14, height: 14 }) =>
         (feather.icons[name] as any)?.toSvg(opts) || "";
 
     const displayTime =
@@ -347,10 +347,23 @@ function renderTags() {
             : null,
     ].filter(Boolean);
 
-    const tagsHtml = (recipe.tags || []).map(
-        (t: string) =>
-            `<span class="tag">${escapeHtml(t)} <button class="remove-tag" data-tag="${escapeHtml(t)}" title="Remove tag">&times;</button></span>`
-    );
+    let domain = "";
+    if (recipe.url) {
+        try {
+            domain = new URL(recipe.url).hostname.replace(/^www\./, '').toUpperCase();
+        } catch (e) { }
+    }
+
+    const tagsHtml: string[] = [];
+    if (domain) {
+        tagsHtml.push(`<span class="tag domain-tag" title="Domain source">${safeIcon("link", { width: 10, height: 10, style: "margin-right: 4px; vertical-align: -1px;" })}${escapeHtml(domain)}</span>`);
+    }
+
+    (recipe.tags || []).forEach((t: string) => {
+        if (t !== domain) {
+            tagsHtml.push(`<span class="tag">${escapeHtml(t)} <button class="remove-tag" data-tag="${escapeHtml(t)}" title="Remove tag">&times;</button></span>`);
+        }
+    });
     tagsHtml.push(`<input type="text" class="tag-input" placeholder="+ Add tag" />`);
 
     metaEl.innerHTML = `

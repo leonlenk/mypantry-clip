@@ -49,8 +49,17 @@ export function buildMetaHtml(recipe: Recipe): string {
  * flip-container when the recipe has a cover image.
  */
 function buildContentHtml(recipe: Recipe): string {
+    let domain = "";
+    let domainTagHtml = "";
+    if (recipe.url) {
+        try {
+            domain = new URL(recipe.url).hostname.replace(/^www\./, '').toUpperCase();
+            domainTagHtml = `<span class="tag domain-tag">${safeIcon("link", { width: 10, height: 10, style: "margin-right: 4px; vertical-align: -1px;" })}${domain}</span>`;
+        } catch (e) { }
+    }
+
     const tagsHtml = recipe.tags
-        ? recipe.tags.map((tag) => `<span class="tag">${tag}</span>`).join("")
+        ? recipe.tags.filter(tag => tag !== domain).map((tag) => `<span class="tag">${tag}</span>`).join("")
         : "";
 
     const description = (recipe.description || "").slice(0, 140);
@@ -58,7 +67,7 @@ function buildContentHtml(recipe: Recipe): string {
 
     const innerHtml = `
         <p class="desc">${description}${truncated}</p>
-        <div class="tags">${tagsHtml}</div>
+        <div class="tags">${domainTagHtml}${tagsHtml}</div>
     `;
 
     if (recipe.image) {

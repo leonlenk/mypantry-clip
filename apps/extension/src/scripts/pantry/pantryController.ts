@@ -453,8 +453,17 @@ function selectSuggestion(tag: string) {
 async function loadRecipes() {
     let recipes = await getAllRecipes();
     recipes.forEach(r => {
-        if (r.tags) {
-            r.tags = r.tags.map(t => t.toUpperCase());
+        if (!r.tags) {
+            r.tags = [];
+        }
+        r.tags = r.tags.map(t => t.toUpperCase());
+        if (r.url) {
+            try {
+                const domain = new URL(r.url).hostname.replace(/^www\./, '').toUpperCase();
+                if (!r.tags.includes(domain)) {
+                    r.tags.push(domain);
+                }
+            } catch (e) { }
         }
     });
     extractTags(recipes);

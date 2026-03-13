@@ -102,6 +102,16 @@
             display: flex;
             align-items: center;
 
+            &.domain-tag {
+                background-color: transparent;
+                border-color: var(--color-border);
+                color: var(--color-text-muted);
+
+                svg {
+                    opacity: 0.7;
+                }
+            }
+
             .remove-tag {
                 background: none;
                 border: none;
