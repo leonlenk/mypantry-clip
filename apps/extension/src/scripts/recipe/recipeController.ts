@@ -27,6 +27,7 @@ import { recipeState } from "./recipeState";
 
 let currentUnitSystem = "us"; // "us" | "metric"
 let isFirstRender = true;
+const UNIT_PREFERENCE_KEY = "preferredUnitSystem";
 
 // ─── Startup ─────────────────────────────────────────────────────────────────
 
@@ -274,7 +275,8 @@ function renderRecipe(recipe: any) {
     const unitDropdown = document.getElementById("unit-system-select");
     if (unitDropdown && !unitDropdown.dataset.listenerAttached) {
         unitDropdown.addEventListener("change", (e: any) => {
-            currentUnitSystem = e.detail.value;
+            currentUnitSystem = e.detail.value === "metric" ? "metric" : "us";
+            localStorage.setItem(UNIT_PREFERENCE_KEY, currentUnitSystem);
             renderIngredients(recipeState.currentRecipe, getCurrentMultiplier());
         });
         unitDropdown.dataset.listenerAttached = "true";
@@ -289,6 +291,27 @@ function renderRecipe(recipe: any) {
 function initUnitSystem(recipe: any) {
     const unitLabel = document.getElementById("unit-system-select-label");
 
+    const updateActiveDropdownItem = (val: string) => {
+        const menu = document.getElementById("unit-system-select-menu");
+        if (menu) {
+            menu.querySelectorAll(".dropdown-item").forEach((i) => {
+                i.classList.toggle("active", i.getAttribute("data-value") === val);
+            });
+        }
+    };
+
+    const applyUnitSystem = (unit: "us" | "metric") => {
+        currentUnitSystem = unit;
+        if (unitLabel) unitLabel.textContent = unit === "metric" ? "Metric (Grams)" : "US (Volume)";
+        updateActiveDropdownItem(unit);
+    };
+
+    const preferredUnit = localStorage.getItem(UNIT_PREFERENCE_KEY);
+    if (preferredUnit === "us" || preferredUnit === "metric") {
+        applyUnitSystem(preferredUnit);
+        return;
+    }
+
     let metricCount = 0;
     let usCount = 0;
 
@@ -300,23 +323,10 @@ function initUnitSystem(recipe: any) {
         });
     }
 
-    const updateActiveDropdownItem = (val: string) => {
-        const menu = document.getElementById("unit-system-select-menu");
-        if (menu) {
-            menu.querySelectorAll(".dropdown-item").forEach((i) => {
-                i.classList.toggle("active", i.getAttribute("data-value") === val);
-            });
-        }
-    };
-
     if (metricCount > usCount) {
-        currentUnitSystem = "metric";
-        if (unitLabel) unitLabel.textContent = "Metric (Grams)";
-        updateActiveDropdownItem("metric");
+        applyUnitSystem("metric");
     } else {
-        currentUnitSystem = "us";
-        if (unitLabel) unitLabel.textContent = "US (Volume)";
-        updateActiveDropdownItem("us");
+        applyUnitSystem("us");
     }
 }
 

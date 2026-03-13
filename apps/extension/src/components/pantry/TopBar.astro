@@ -1,5 +1,6 @@
 ---
 import feather from "feather-icons";
+import Dropdown from "../common/Dropdown.astro";
 const downloadIcon =
     feather.icons["download"]?.toSvg({ width: 16, height: 16 }) || "";
 const uploadIcon =
@@ -17,6 +18,17 @@ const uploadIcon =
                     >Favorites</button
                 >
             </nav>
+            <Dropdown
+                id="pantry-unit-pref"
+                label="US"
+                className="left-aligned pantry-unit-dropdown"
+                initialValue="us"
+                items={[
+                    { value: "us", label: "US" },
+                    { value: "metric", label: "MET" },
+                ]}
+            />
+            <span class="unit-pref-note">Default Units</span>
         </div>
 
         <!-- RIGHT: Tag Dropdown -->

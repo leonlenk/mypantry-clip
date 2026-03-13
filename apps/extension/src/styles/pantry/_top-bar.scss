@@ -23,6 +23,8 @@
 
         .left-section {
             justify-content: flex-start;
+            align-items: center;
+            gap: var(--spacing-sm);
         }
 
         .right-section {
@@ -97,6 +99,35 @@
                 }
             }
         }
+
+        .pantry-unit-dropdown {
+            height: 40px;
+
+            .dropdown-trigger {
+                min-width: 74px;
+                justify-content: space-between;
+                padding: 0 0.9rem;
+                font-size: 0.82rem;
+                color: var(--color-text-muted);
+            }
+
+            .dropdown-menu {
+                min-width: 100%;
+
+                .dropdown-item {
+                    font-size: 0.82rem;
+                    text-align: center;
+                }
+            }
+        }
+
+        .unit-pref-note {
+            font-size: 0.72rem;
+            color: var(--color-text-meta);
+            letter-spacing: 0.01em;
+            white-space: nowrap;
+            margin-left: 2px;
+        }
     }
 }
 
@@ -125,6 +156,24 @@
         .filters .filter-btn {
             padding: 0 0.9rem;
             font-size: 0.85rem;
+        }
+
+        .pantry-unit-dropdown {
+            height: 36px;
+
+            .dropdown-trigger {
+                min-width: 68px;
+                font-size: 0.76rem;
+                padding: 0 0.75rem;
+            }
+
+            .dropdown-menu .dropdown-item {
+                font-size: 0.76rem;
+            }
+        }
+
+        .unit-pref-note {
+            font-size: 0.64rem;
         }
     }
 }

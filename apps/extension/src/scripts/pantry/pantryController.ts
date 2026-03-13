@@ -41,10 +41,12 @@ const filterLinks = document.querySelectorAll(".filter-btn");
 const clearBtn = document.getElementById("clear-search");
 const searchBadgesContainer = document.getElementById("search-badges");
 const searchSuggestions = document.getElementById("search-suggestions");
+const unitPreferenceDropdown = document.getElementById("pantry-unit-pref");
 
 // ─── Page state ───────────────────────────────────────────────────────────────
 
 let currentFilter = localStorage.getItem("pantryFilter") || "all";
+const UNIT_PREFERENCE_KEY = "preferredUnitSystem";
 let currentTagFilters: string[] = [];
 let currentSuggestions: string[] = [];
 let selectedSuggestionIndex = -1;
@@ -175,6 +177,31 @@ document.addEventListener("DOMContentLoaded", async () => {
             await loadRecipes();
         });
     });
+
+    if (unitPreferenceDropdown) {
+        const storedUnitPreference = localStorage.getItem(UNIT_PREFERENCE_KEY);
+        const selected = storedUnitPreference === "metric" ? "metric" : "us";
+
+        const unitLabel = document.getElementById("pantry-unit-pref-label");
+        if (unitLabel) {
+            unitLabel.textContent = selected === "metric" ? "MET" : "US";
+        }
+
+        const menu = document.getElementById("pantry-unit-pref-menu");
+        if (menu) {
+            menu.querySelectorAll(".dropdown-item").forEach((item) => {
+                item.classList.toggle(
+                    "active",
+                    item.getAttribute("data-value") === selected
+                );
+            });
+        }
+
+        unitPreferenceDropdown.addEventListener("change", (e: any) => {
+            const selectedValue = e?.detail?.value === "metric" ? "metric" : "us";
+            localStorage.setItem(UNIT_PREFERENCE_KEY, selectedValue);
+        });
+    }
 
     // Fetch active extractions from the background script so placeholder cards
     // survive a page refresh while extraction is still in-flight.
