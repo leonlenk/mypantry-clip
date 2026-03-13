@@ -62,101 +62,6 @@
             }
         }
 
-        .center-section {
-            flex: 2;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: var(--spacing-sm);
-            max-width: 650px;
-
-            .search-wrap {
-                width: 100%;
-                display: flex;
-                gap: var(--spacing-sm);
-                position: relative;
-
-                input {
-                    flex: 1;
-                    padding-left: 2.8rem;
-                    padding-right: 3.5rem;
-                    border-radius: 40px;
-                    height: 48px;
-                    border: 1px solid var(--color-border);
-                    background-color: var(--color-surface);
-                    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
-                    font-size: 1rem;
-                    transition: all 0.2s ease;
-
-                    &::placeholder {
-                        color: var(--color-text-muted);
-                        opacity: 0.6;
-                    }
-
-                    &:focus {
-                        background-color: white;
-                        border-color: var(--color-accent);
-                        box-shadow: 0 0 0 4px rgba(200, 145, 111, 0.1);
-                    }
-                }
-
-                .clear-btn {
-                    position: absolute;
-                    right: 8.5rem;
-                    top: 50%;
-                    transform: translateY(-50%);
-                    background: none;
-                    border: none;
-                    color: var(--color-text-muted);
-                    font-size: 1.1rem;
-                    cursor: pointer;
-                    padding: 8px;
-                    border-radius: 50%;
-                    display: none;
-                    align-items: center;
-                    justify-content: center;
-                    opacity: 0.6;
-                    transition: all 0.2s ease;
-                    z-index: 5;
-
-                    &.show {
-                        display: flex;
-                    }
-
-                    &:hover {
-                        opacity: 1;
-                        background-color: rgba(0, 0, 0, 0.05);
-                    }
-                }
-
-                .search-icon {
-                    position: absolute;
-                    left: 1.25rem;
-                    top: 50%;
-                    transform: translateY(-50%);
-                    opacity: 0.5;
-                    pointer-events: none;
-                    color: var(--color-text-muted);
-                }
-
-                button {
-                    border-radius: 40px;
-                    padding: 0 1.8rem;
-                    height: 48px;
-                }
-            }
-
-            .count-wrap {
-                .recipe-count {
-                    font-size: 0.85rem;
-                    font-weight: 600;
-                    color: var(--color-text-muted);
-                    opacity: 0.7;
-                    letter-spacing: 0.02em;
-                }
-            }
-        }
-
         .filters {
             display: flex;
             gap: var(--spacing-xs);
@@ -212,30 +117,11 @@
             order: 1;
             justify-content: center;
         }
-
-        .center-section {
-            order: 2;
-            max-width: none;
-        }
     }
 }
 
 @media (max-width: 600px) {
     .top-bar .top-row {
-        .center-section .search-wrap {
-
-            // Shorten placeholder on very narrow screens so it doesn't clip
-            input::placeholder {
-                font-size: 0.85rem;
-            }
-
-            // Make Search button slightly more compact
-            button.primary {
-                padding: 0 1.2rem;
-                font-size: 0.85rem;
-            }
-        }
-
         .filters .filter-btn {
             padding: 0 0.9rem;
             font-size: 0.85rem;

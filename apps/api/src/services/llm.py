@@ -29,7 +29,6 @@ class Recipe(BaseModel):
     servings: Optional[int] = Field(default=1, description="Number of servings")
     ingredients: List[Ingredient] = Field(description="List of ingredients")
     instructions: List[str] = Field(description="List of instruction steps as strings")
-    tags: List[str] = Field(default=[], description="List of tags e.g. ['vegan', 'dessert', 'dinner']")
     notes: List[str] = Field(default=[], description="List of full-text recipe notes referenced by the ingredients")
 
 class Substitution(BaseModel):

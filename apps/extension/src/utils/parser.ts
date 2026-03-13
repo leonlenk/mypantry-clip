@@ -63,7 +63,6 @@ interface Recipe {
   yield?: string; // Descriptive yield if present (e.g., "2 dozen cookies", "1 9-inch pie")
   ingredients: Ingredient[];
   instructions: InstructionStep[];
-  tags?: string[]; // e.g. ["vegan", "dessert", "dinner"]
   nutrition?: {
     calories?: number;
     protein?: string;

@@ -49,6 +49,9 @@ document.addEventListener("DOMContentLoaded", async () => {
             showError();
             return;
         }
+        if (recipe.tags) {
+            recipe.tags = recipe.tags.map((t: string) => t.toUpperCase());
+        }
         recipeState.currentRecipe = recipe;
         renderRecipe(recipe);
     } catch (e) {
@@ -146,7 +149,7 @@ function wireDelegatedHandlers() {
         if (removeBtn && recipe) {
             const tagToRemove = removeBtn.getAttribute("data-tag");
             if (tagToRemove) {
-                recipe.tags = (recipe.tags || []).filter((t: string) => t !== tagToRemove);
+                recipe.tags = (recipe.tags || []).filter((t: string) => t.toUpperCase() !== tagToRemove.toUpperCase());
                 await saveRecipeLocally(recipe);
                 renderTags();
             }
@@ -160,7 +163,7 @@ function wireDelegatedHandlers() {
         if (target?.classList.contains("tag-input") && e.key === "Enter") {
             e.preventDefault();
             const input = target as HTMLInputElement;
-            const newTag = input.value.trim();
+            const newTag = input.value.trim().toUpperCase();
             if (newTag && recipe) {
                 recipe.tags = recipe.tags || [];
                 if (!recipe.tags.includes(newTag)) {

@@ -39,13 +39,27 @@ const searchBtn = document.getElementById("search-btn") as HTMLButtonElement;
 const recipeCountEl = document.getElementById("recipe-count");
 const filterLinks = document.querySelectorAll(".filter-btn");
 const clearBtn = document.getElementById("clear-search");
-const dropdownMenu = document.getElementById("tag-dropdown-menu");
-const selectedTagEl = document.getElementById("selected-tag");
+const searchBadgesContainer = document.getElementById("search-badges");
+const searchSuggestions = document.getElementById("search-suggestions");
 
 // ─── Page state ───────────────────────────────────────────────────────────────
 
 let currentFilter = localStorage.getItem("pantryFilter") || "all";
-let currentTagFilter = localStorage.getItem("pantryTagFilter") || "";
+let currentTagFilters: string[] = [];
+let currentSuggestions: string[] = [];
+let selectedSuggestionIndex = -1;
+try {
+    const stored = localStorage.getItem("pantryTagFilters");
+    if (stored) {
+        currentTagFilters = JSON.parse(stored);
+    } else {
+        const oldSingle = localStorage.getItem("pantryTagFilter");
+        if (oldSingle) currentTagFilters = [oldSingle.toUpperCase()];
+    }
+} catch {
+    currentTagFilters = [];
+}
+const allKnownTags = new Set<string>();
 let activeExtractions: Record<string, { status: string; title: string }> = {};
 
 // Shared IntersectionObserver: adds .in-view to each card when it is ~150px
@@ -286,57 +300,164 @@ function wireExtractionListener() {
 
 // ─── Tag dropdown ─────────────────────────────────────────────────────────────
 
-function populateTags(allRecipes: Recipe[]) {
-    if (!dropdownMenu || !selectedTagEl) return;
-
-    const allTags = new Set<string>();
+function extractTags(allRecipes: Recipe[]) {
+    allKnownTags.clear();
     allRecipes.forEach((r) => {
-        if (r.tags) r.tags.forEach((t) => allTags.add(t));
+        if (r.tags) r.tags.forEach((t) => allKnownTags.add(t));
     });
 
-    const sortedTags = Array.from(allTags).sort();
-    dropdownMenu.innerHTML = "";
-
-    // "All Tags" option
-    const allOption = document.createElement("div");
-    allOption.className = `dropdown-item ${!currentTagFilter ? "active" : ""}`;
-    allOption.textContent = "All Tags";
-    allOption.addEventListener("click", async () => {
-        currentTagFilter = "";
-        localStorage.removeItem("pantryTagFilter");
-        selectedTagEl.textContent = "All Tags";
-        await loadRecipes();
-    });
-    dropdownMenu.appendChild(allOption);
-
-    sortedTags.forEach((tag) => {
-        const option = document.createElement("div");
-        option.className = `dropdown-item ${currentTagFilter === tag ? "active" : ""}`;
-        option.textContent = tag;
-        option.addEventListener("click", async () => {
-            currentTagFilter = tag;
-            localStorage.setItem("pantryTagFilter", tag);
-            selectedTagEl.textContent = tag;
-            await loadRecipes();
-        });
-        dropdownMenu.appendChild(option);
-    });
-
-    // If the saved tag filter is no longer valid, reset it
-    if (currentTagFilter && !allTags.has(currentTagFilter)) {
-        currentTagFilter = "";
-        localStorage.removeItem("pantryTagFilter");
-        selectedTagEl.textContent = "All Tags";
-    } else if (currentTagFilter && allTags.has(currentTagFilter)) {
-        selectedTagEl.textContent = currentTagFilter;
+    // Remove any filters that are no longer valid tags
+    const origLength = currentTagFilters.length;
+    currentTagFilters = currentTagFilters.filter(t => allKnownTags.has(t));
+    if (currentTagFilters.length !== origLength) {
+        localStorage.setItem("pantryTagFilters", JSON.stringify(currentTagFilters));
     }
+    renderSearchBadges();
+}
+
+function renderSearchBadges() {
+    if (!searchBadgesContainer) return;
+    searchBadgesContainer.innerHTML = "";
+
+    const MAX_VISIBLE_TAGS = 2;
+    const MAX_TAG_LENGTH = 12;
+
+    const visibleTags = currentTagFilters.slice(0, MAX_VISIBLE_TAGS);
+    const hiddenTags = currentTagFilters.slice(MAX_VISIBLE_TAGS);
+
+    visibleTags.forEach((tag, idx) => {
+        const badge = document.createElement("div");
+        badge.className = "search-badge";
+        const displayTag = tag.length > MAX_TAG_LENGTH ? tag.substring(0, MAX_TAG_LENGTH) + "..." : tag;
+        badge.innerHTML = `
+            <span title="${tag}">${displayTag}</span>
+            <button data-index="${idx}" title="Remove tag">
+                ${feather.icons["x"]?.toSvg({ width: 12, height: 12 }) || "x"}
+            </button>
+        `;
+        const btn = badge.querySelector("button");
+        btn?.addEventListener("click", () => {
+            currentTagFilters.splice(idx, 1);
+            localStorage.setItem("pantryTagFilters", JSON.stringify(currentTagFilters));
+            renderSearchBadges();
+            handleSearch();
+        });
+        searchBadgesContainer.appendChild(badge);
+    });
+
+    if (hiddenTags.length > 0) {
+        const moreBadge = document.createElement("div");
+        moreBadge.className = "search-badge more-badge";
+        moreBadge.innerHTML = `+${hiddenTags.length}`;
+        moreBadge.title = "Click to see more tags";
+
+        // Overflow container
+        const popover = document.createElement("div");
+        popover.className = "more-tags-popover hidden";
+
+        hiddenTags.forEach((tag, hiddenIdx) => {
+            const realIdx = MAX_VISIBLE_TAGS + hiddenIdx;
+            const item = document.createElement("div");
+            item.className = "more-tag-item";
+            item.innerHTML = `
+                <span title="${tag}">${tag}</span>
+                <button title="Remove tag">
+                    ${feather.icons["x"]?.toSvg({ width: 12, height: 12 }) || "x"}
+                </button>
+            `;
+            item.querySelector("button")?.addEventListener("click", (e) => {
+                e.stopPropagation();
+                currentTagFilters.splice(realIdx, 1);
+                localStorage.setItem("pantryTagFilters", JSON.stringify(currentTagFilters));
+                renderSearchBadges();
+                handleSearch();
+            });
+            popover.appendChild(item);
+        });
+
+        moreBadge.addEventListener("click", (e) => {
+            e.stopPropagation();
+            popover.classList.toggle("hidden");
+        });
+
+        // Hide popover when clicking outside
+        document.addEventListener("click", (e) => {
+            if (!moreBadge.contains(e.target as Node)) {
+                popover.classList.add("hidden");
+            }
+        });
+
+        moreBadge.appendChild(popover);
+        searchBadgesContainer.appendChild(moreBadge);
+    }
+
+    // Evaluate if the clear X button needs to be shown based on tag presence
+    if ((searchInput && searchInput.value.trim().length > 0) || currentTagFilters.length > 0) {
+        clearBtn?.classList.add("show");
+    } else {
+        clearBtn?.classList.remove("show");
+    }
+}
+
+function renderSuggestions() {
+    if (!searchSuggestions) return;
+    if (currentSuggestions.length === 0) {
+        searchSuggestions.classList.add("hidden");
+        return;
+    }
+
+    searchSuggestions.innerHTML = "";
+    const lowerInput = searchInput.value.trim().toLowerCase();
+
+    currentSuggestions.forEach((tag, idx) => {
+        const item = document.createElement("div");
+        item.className = "suggestion-item" + (idx === selectedSuggestionIndex ? " selected" : "");
+
+        const lowerTag = tag.toLowerCase();
+        if (lowerInput && lowerTag.startsWith(lowerInput)) {
+            const prefix = tag.substring(0, lowerInput.length);
+            const suffix = tag.substring(lowerInput.length);
+            item.innerHTML = `<span class="suggest-tag-match">${prefix}</span>${suffix}`;
+        } else {
+            item.textContent = tag;
+        }
+
+        item.addEventListener("click", () => {
+            selectSuggestion(tag);
+        });
+
+        searchSuggestions.appendChild(item);
+    });
+    searchSuggestions.classList.remove("hidden");
+}
+
+function hideSuggestions() {
+    currentSuggestions = [];
+    selectedSuggestionIndex = -1;
+    searchSuggestions?.classList.add("hidden");
+}
+
+function selectSuggestion(tag: string) {
+    if (!currentTagFilters.includes(tag)) {
+        currentTagFilters.unshift(tag);
+        localStorage.setItem("pantryTagFilters", JSON.stringify(currentTagFilters));
+        renderSearchBadges();
+    }
+    searchInput.value = "";
+    hideSuggestions();
+    handleSearch();
 }
 
 // ─── Recipe loading / rendering ───────────────────────────────────────────────
 
 async function loadRecipes() {
     let recipes = await getAllRecipes();
-    populateTags(recipes);
+    recipes.forEach(r => {
+        if (r.tags) {
+            r.tags = r.tags.map(t => t.toUpperCase());
+        }
+    });
+    extractTags(recipes);
 
     recipes.sort((a, b) => {
         if (currentFilter === "all" || currentFilter === "favorites") {
@@ -354,9 +475,9 @@ async function loadRecipes() {
         recipes = recipes.filter((r) => r.isFavorite);
     }
 
-    if (currentTagFilter) {
+    if (currentTagFilters.length > 0) {
         recipes = recipes.filter(
-            (r) => r.tags && r.tags.includes(currentTagFilter)
+            (r) => r.tags && currentTagFilters.every(tag => r.tags!.includes(tag))
         );
     }
 
@@ -512,7 +633,12 @@ async function handleSearch() {
     try {
         const lower = query.toLowerCase();
         const queryTokens = lower.split(/\s+/);
-        const all = await getAllRecipes();
+        let all = await getAllRecipes();
+
+        // Ensure hard tag filters are applied before semantic search
+        if (currentTagFilters.length > 0) {
+            all = all.filter(r => r.tags && currentTagFilters.every(t => r.tags!.includes(t)));
+        }
 
         // Step 1: synchronous tag/title pre-filter (no model needed)
         const tagHitIds = new Set<string>();
@@ -574,24 +700,208 @@ async function handleSearch() {
 function wireSearchHandlers() {
     searchBtn?.addEventListener("click", handleSearch);
 
+    // Global Enter to focus search bar
+    document.addEventListener("keydown", (e: KeyboardEvent) => {
+        const activeTag = document.activeElement?.tagName;
+        if (e.key === "Enter" && activeTag !== "INPUT" && activeTag !== "TEXTAREA" && activeTag !== "BUTTON") {
+            e.preventDefault();
+            searchInput?.focus();
+        }
+    });
+
+    // Handle chips selection when text is highlighted
+    document.addEventListener("selectionchange", () => {
+        if (document.activeElement === searchInput) {
+            const isAtLeastStartSelected = searchInput.selectionStart === 0 && (searchInput.selectionEnd || 0) > 0;
+            if (isAtLeastStartSelected && searchInput.value.length > 0) {
+                searchBadgesContainer?.classList.add("chips-selected");
+            } else {
+                searchBadgesContainer?.classList.remove("chips-selected");
+            }
+        } else {
+            searchBadgesContainer?.classList.remove("chips-selected");
+        }
+    });
+
+    // Hide suggestions when clicking outside
+    document.addEventListener("click", (e) => {
+        if (!searchInput?.contains(e.target as Node) && !searchSuggestions?.contains(e.target as Node)) {
+            hideSuggestions();
+        }
+    });
+
     searchInput?.addEventListener("keydown", (e: KeyboardEvent) => {
-        if (e.key === "Enter") handleSearch();
+        // Handle selecting chips
+        if (e.key === "a" && (e.ctrlKey || e.metaKey)) {
+            if (currentTagFilters.length > 0) {
+                searchBadgesContainer?.classList.add("chips-selected");
+            }
+            // Let default browser text selection happen
+        }
+
+        if (searchBadgesContainer?.classList.contains("chips-selected")) {
+            const isPrintableKey = e.key.length === 1 && !e.ctrlKey && !e.metaKey;
+            const isCutOrPaste = (e.key === "x" || e.key === "v") && (e.ctrlKey || e.metaKey);
+
+            if (e.key === "Backspace" || e.key === "Delete" || isPrintableKey || isCutOrPaste) {
+                if (currentTagFilters.length > 0) {
+                    currentTagFilters = [];
+                    localStorage.setItem("pantryTagFilters", JSON.stringify(currentTagFilters));
+                    renderSearchBadges();
+                }
+                searchBadgesContainer.classList.remove("chips-selected");
+
+                if (e.key === "Backspace" || e.key === "Delete") {
+                    searchInput.value = "";
+                    e.preventDefault();
+                    triggerShowSuggestions();
+                    handleSearch();
+                    return;
+                }
+            } else if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(e.key)) {
+                searchBadgesContainer.classList.remove("chips-selected");
+            }
+        }
+        if (e.key === "Tab") {
+            if (currentSuggestions.length > 0) {
+                e.preventDefault();
+                const idx = selectedSuggestionIndex >= 0 ? selectedSuggestionIndex : 0;
+                selectSuggestion(currentSuggestions[idx]);
+            }
+            return;
+        }
+
+        if (e.key === "ArrowDown") {
+            if (currentSuggestions.length > 0) {
+                e.preventDefault();
+                selectedSuggestionIndex = (selectedSuggestionIndex + 1) % currentSuggestions.length;
+                renderSuggestions();
+                // Ensure selected item is visible (basic scroll)
+                const selectedEl = searchSuggestions?.querySelector('.selected') as HTMLElement;
+                if (selectedEl) selectedEl.scrollIntoView({ block: 'nearest' });
+            }
+            return;
+        }
+
+        if (e.key === "ArrowUp") {
+            if (currentSuggestions.length > 0) {
+                e.preventDefault();
+                selectedSuggestionIndex = selectedSuggestionIndex <= 0 ? currentSuggestions.length - 1 : selectedSuggestionIndex - 1;
+                renderSuggestions();
+                const selectedEl = searchSuggestions?.querySelector('.selected') as HTMLElement;
+                if (selectedEl) selectedEl.scrollIntoView({ block: 'nearest' });
+            }
+            return;
+        }
+
+        if (e.key === "Enter") {
+            e.preventDefault();
+            if (selectedSuggestionIndex >= 0 && selectedSuggestionIndex < currentSuggestions.length) {
+                selectSuggestion(currentSuggestions[selectedSuggestionIndex]);
+                return;
+            }
+
+            const text = searchInput.value.trim().toUpperCase();
+            if (allKnownTags.has(text) && !currentTagFilters.includes(text)) {
+                currentTagFilters.unshift(text);
+                localStorage.setItem("pantryTagFilters", JSON.stringify(currentTagFilters));
+                searchInput.value = "";
+                renderSearchBadges();
+                hideSuggestions();
+                handleSearch();
+                return;
+            }
+            hideSuggestions();
+            handleSearch();
+            return;
+        }
+        if (e.key === "Backspace" && searchInput.value === "" && currentTagFilters.length > 0) {
+            currentTagFilters.shift();
+            localStorage.setItem("pantryTagFilters", JSON.stringify(currentTagFilters));
+            renderSearchBadges();
+            hideSuggestions();
+            handleSearch();
+        }
+        if (e.key === "Escape") {
+            hideSuggestions();
+        }
     });
 
     clearBtn?.addEventListener("click", async () => {
         if (searchInput) {
             searchInput.value = "";
+            currentTagFilters = [];
+            localStorage.setItem("pantryTagFilters", JSON.stringify(currentTagFilters));
+            renderSearchBadges();
+
             clearBtn.classList.remove("show");
+            hideSuggestions();
             await loadRecipes();
         }
     });
 
     searchInput?.addEventListener("input", async () => {
-        if (searchInput.value.trim().length > 0) {
+        const text = searchInput.value;
+        const delimiterMatch = text.match(/[, ]$/);
+        const term = text.trim().toUpperCase();
+
+        if (delimiterMatch && term) {
+            if (allKnownTags.has(term) && !currentTagFilters.includes(term)) {
+                currentTagFilters.unshift(term);
+                localStorage.setItem("pantryTagFilters", JSON.stringify(currentTagFilters));
+                searchInput.value = "";
+                renderSearchBadges();
+                hideSuggestions();
+                await handleSearch();
+                return;
+            }
+        }
+
+        if (text.trim().length > 0 || currentTagFilters.length > 0) {
             clearBtn?.classList.add("show");
         } else {
             clearBtn?.classList.remove("show");
-            await loadRecipes();
+        }
+
+        triggerShowSuggestions();
+
+        if (text.trim().length === 0) {
+            await handleSearch(); // trigger search which will fall back to loadRecipes
+        }
+    });
+
+    const triggerShowSuggestions = () => {
+        const textBeforeCursor = searchInput?.value.substring(0, searchInput?.selectionStart || 0) || "";
+        let lowerQuery = "";
+
+        if (textBeforeCursor.trim() !== "") {
+            lowerQuery = searchInput?.value.trim().toLowerCase() || "";
+        }
+
+        currentSuggestions = Array.from(allKnownTags).filter(tag =>
+            !currentTagFilters.includes(tag) && tag.toLowerCase().startsWith(lowerQuery)
+        ).sort();
+
+        if (lowerQuery === "") {
+            selectedSuggestionIndex = -1;
+        } else {
+            selectedSuggestionIndex = currentSuggestions.length > 0 ? 0 : -1;
+        }
+        renderSuggestions();
+    };
+
+    searchInput?.addEventListener("focus", triggerShowSuggestions);
+    searchInput?.addEventListener("click", triggerShowSuggestions);
+    searchInput?.addEventListener("keyup", (e) => {
+        if (["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)) {
+            triggerShowSuggestions();
+        }
+    });
+
+    // Also allow clicking inside the container background to focus input natively
+    searchInput?.closest(".search-input-container")?.addEventListener("click", (e) => {
+        if (e.target === searchInput?.closest(".search-input-container")) {
+            searchInput?.focus();
         }
     });
 }

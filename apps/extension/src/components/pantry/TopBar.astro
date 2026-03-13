@@ -1,9 +1,5 @@
 ---
 import feather from "feather-icons";
-import Dropdown from "../common/Dropdown.astro";
-const searchIcon =
-    feather.icons["search"]?.toSvg({ width: 18, height: 18 }) || "";
-const clearIcon = feather.icons["x"]?.toSvg({ width: 18, height: 18 }) || "";
 const downloadIcon =
     feather.icons["download"]?.toSvg({ width: 16, height: 16 }) || "";
 const uploadIcon =
@@ -21,29 +17,6 @@ const uploadIcon =
                     >Favorites</button
                 >
             </nav>
-        </div>
-
-        <!-- CENTER: Search bar + recipe count underneath -->
-        <div class="center-section">
-            <div class="search-wrap">
-                <span class="search-icon" set:html={searchIcon}></span>
-                <input
-                    type="text"
-                    id="semantic-search"
-                    placeholder="Semantic search: e.g. 'A spicy high-protein dinner'..."
-                />
-                <button
-                    id="clear-search"
-                    class="clear-btn"
-                    title="Clear search"
-                >
-                    <span set:html={clearIcon}></span>
-                </button>
-                <button class="primary" id="search-btn">Search</button>
-            </div>
-            <div class="count-wrap">
-                <span id="recipe-count" class="recipe-count"></span>
-            </div>
         </div>
 
         <!-- RIGHT: Tag Dropdown -->
@@ -64,11 +37,6 @@ const uploadIcon =
                 class="action-btn"
                 title="Export Backup"
                 set:html={downloadIcon}></button>
-            <Dropdown
-                id="tag-dropdown"
-                label="All Tags"
-                placeholderId="selected-tag"
-            />
         </div>
     </div>
 </header>

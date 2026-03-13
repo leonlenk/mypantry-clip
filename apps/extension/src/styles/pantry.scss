@@ -6,6 +6,7 @@
  */
 
 @use "pantry/top-bar";
+@use "pantry/search-bar";
 @use "pantry/recipe-card";
 
 body {
@@ -16,6 +17,7 @@ body {
 
 .pantry-layout {
     display: flex;
+    flex-direction: column;
     height: 100%;
     width: 100%;
     background-color: var(--color-bg);
@@ -26,6 +28,8 @@ body {
     display: flex;
     flex-direction: column;
     padding: var(--spacing-xl);
+    padding-bottom: 120px;
+    /* Leave space for absolute search bar */
     overflow-y: auto;
     background-image: radial-gradient(circle at top right,
             rgba(139, 115, 85, 0.03) 0%,
@@ -147,4 +151,11 @@ body {
     to {
         transform: rotate(360deg);
     }
+}
+
+// Ensure the floating search bar container remains above everything during view transitions
+::view-transition-group(search-bar-container),
+::view-transition-old(search-bar-container),
+::view-transition-new(search-bar-container) {
+    z-index: 9999;
 }

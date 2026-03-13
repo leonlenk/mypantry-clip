@@ -1,0 +1,306 @@
+/*
+ * Pantry – Search Bar Styles
+ * Used by: components/pantry/SearchBar.astro
+ */
+
+.search-bar-container {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    margin-top: 0;
+    padding: var(--spacing-md) var(--spacing-xl);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-xs);
+    z-index: 100;
+    view-transition-name: search-bar-container;
+    pointer-events: none;
+    /* Let clicks pass through */
+
+    .search-wrap {
+        pointer-events: auto;
+        /* Re-enable clicks for search bar */
+        width: 100%;
+        max-width: 800px;
+        display: flex;
+        gap: var(--spacing-sm);
+        position: relative;
+
+        .search-input-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            border-radius: 40px;
+            border: 2px solid var(--color-accent);
+            background-color: var(--color-surface);
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
+            min-height: 48px;
+            padding-left: 2.8rem;
+            padding-right: 3.5rem;
+            position: relative;
+            transition: all 0.2s ease;
+
+            .search-suggestions {
+                position: absolute;
+                bottom: calc(100% + 12px);
+                top: auto;
+                left: 3rem;
+                right: auto;
+                min-width: 300px;
+                max-width: 400px;
+                background: var(--color-surface);
+                border: 1px solid var(--color-border);
+                border-radius: 8px;
+                /* More VSCode like */
+                box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+                z-index: 1000;
+                max-height: 250px;
+                overflow-y: auto;
+                display: flex;
+                flex-direction: column;
+                padding: 4px 0;
+
+                /* Scrollbar styling for VSCode feel */
+                &::-webkit-scrollbar {
+                    width: 8px;
+                }
+
+                &::-webkit-scrollbar-thumb {
+                    background: var(--color-border);
+                    border-radius: 4px;
+                }
+
+                &::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+
+                &.hidden {
+                    display: none;
+                }
+
+                .suggestion-item {
+                    padding: 10px 16px;
+                    cursor: pointer;
+                    font-size: 0.95rem;
+                    color: var(--color-text);
+                    transition: background-color 0.1s ease;
+
+                    &:hover,
+                    &.selected {
+                        background-color: rgba(139, 115, 85, 0.1);
+                        /* light accent */
+                        color: var(--color-accent);
+                        font-weight: 500;
+                    }
+
+                    .suggest-tag-match {
+                        font-weight: 700;
+                    }
+                }
+            }
+
+            &:focus-within {
+                background-color: white;
+                border-color: var(--color-accent);
+                box-shadow: 0 0 0 4px rgba(200, 145, 111, 0.1);
+            }
+
+            .search-icon {
+                position: absolute;
+                left: 1.25rem;
+                color: var(--color-text-muted);
+                opacity: 0.5;
+                pointer-events: none;
+                display: flex;
+                align-items: center;
+            }
+
+            .search-badges {
+                display: flex;
+                flex-wrap: nowrap;
+                gap: 8px;
+                margin-right: 8px;
+
+                &.chips-selected .search-badge {
+                    opacity: 0.6;
+                    box-shadow: 0 0 0 2px var(--color-border);
+                }
+
+                .search-badge {
+                    background-color: var(--color-accent);
+                    color: white;
+                    padding: 4px 10px;
+                    border-radius: 12px;
+                    font-size: 0.85rem;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    white-space: nowrap;
+
+                    button {
+                        background: none;
+                        border: none;
+                        color: white;
+                        padding: 0;
+                        cursor: pointer;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        border-radius: 50%;
+                        width: 16px;
+                        height: 16px;
+                        opacity: 0.8;
+
+                        &:hover {
+                            opacity: 1;
+                            background: rgba(0, 0, 0, 0.1);
+                        }
+                    }
+
+                    &.more-badge {
+                        cursor: pointer;
+                        user-select: none;
+                        background-color: rgba(139, 115, 85, 0.1); // light accent
+                        color: var(--color-accent);
+                        border: 1px solid var(--color-accent);
+                        position: relative;
+
+                        &:hover {
+                            background-color: rgba(139, 115, 85, 0.2);
+                        }
+
+                        .more-tags-popover {
+                            position: absolute;
+                            bottom: calc(100% + 8px);
+                            top: auto;
+                            left: 0;
+                            background: var(--color-surface);
+                            border: 1px solid var(--color-border);
+                            border-radius: 12px;
+                            box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
+                            z-index: 101;
+                            padding: 8px;
+                            display: flex;
+                            flex-direction: column;
+                            gap: 6px;
+                            min-width: 200px;
+                            max-width: 300px;
+                            cursor: default;
+
+                            &.hidden {
+                                display: none;
+                            }
+
+                            .more-tag-item {
+                                display: flex;
+                                align-items: flex-start;
+                                justify-content: space-between;
+                                background-color: var(--color-accent);
+                                color: white;
+                                padding: 6px 10px;
+                                border-radius: 12px;
+                                font-size: 0.85rem;
+                                gap: 8px;
+
+                                span {
+                                    white-space: normal;
+                                    word-break: break-word;
+                                    text-align: left;
+                                    margin-top: 1px;
+                                }
+
+                                button {
+                                    margin-left: auto;
+                                    flex-shrink: 0;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            input {
+                flex: 1;
+                border: none;
+                background: none;
+                outline: none;
+                font-size: 1rem;
+                padding: 0;
+                min-width: 50px;
+                height: 100%;
+
+                &::placeholder {
+                    color: var(--color-text-muted);
+                    opacity: 0.6;
+                }
+            }
+
+            .clear-btn {
+                position: absolute;
+                right: 0.5rem;
+                background: none;
+                border: none;
+                color: var(--color-text-muted);
+                font-size: 1.1rem;
+                cursor: pointer;
+                padding: 8px;
+                border-radius: 50%;
+                display: none;
+                align-items: center;
+                justify-content: center;
+                opacity: 0.6;
+                transition: all 0.2s ease;
+                z-index: 5;
+
+                &.show {
+                    display: flex;
+                }
+
+                &:hover {
+                    opacity: 1;
+                    background-color: rgba(0, 0, 0, 0.05);
+                }
+            }
+        }
+
+        >button.primary {
+            border-radius: 40px;
+            padding: 0 1.8rem;
+            height: 48px;
+            flex-shrink: 0;
+        }
+    }
+
+    .count-wrap {
+        .recipe-count {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--color-text-muted);
+            opacity: 0.7;
+            letter-spacing: 0.02em;
+        }
+    }
+}
+
+// Media Queries
+@media (max-width: 600px) {
+    .search-bar-container {
+        padding: var(--spacing-sm);
+
+        .search-wrap {
+            .search-input-container {
+                input::placeholder {
+                    font-size: 0.85rem;
+                }
+            }
+
+            button.primary {
+                padding: 0 1.2rem;
+                font-size: 0.85rem;
+            }
+        }
+    }
+}

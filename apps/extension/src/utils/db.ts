@@ -44,6 +44,9 @@ function openDb(): Promise<IDBDatabase> {
  * and updates the saved URLs cache in chrome.storage.local.
  */
 export async function saveRecipeLocally(recipe: Recipe): Promise<void> {
+    if (recipe.tags) {
+        recipe.tags = recipe.tags.map(t => t.toUpperCase());
+    }
     const db = await openDb();
     await new Promise<void>((resolve, reject) => {
         const tx = db.transaction(STORE_NAME, "readwrite");
@@ -80,6 +83,11 @@ export async function saveRecipeLocally(recipe: Recipe): Promise<void> {
  */
 export async function importRecipesLocally(recipes: Recipe[]): Promise<void> {
     if (!recipes || recipes.length === 0) return;
+    recipes.forEach(r => {
+        if (r.tags) {
+            r.tags = r.tags.map(t => t.toUpperCase());
+        }
+    });
 
     const db = await openDb();
     await new Promise<void>((resolve, reject) => {

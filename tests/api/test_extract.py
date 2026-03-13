@@ -43,7 +43,6 @@ class TestExtractEndpoint:
             "servings": 4,
             "ingredients": [{"name": "flour"}],
             "instructions": ["Mix", "Cook"],
-            "tags": ["breakfast"],
             "notes": [],
         }
         fake_recipe = MagicMock()
@@ -55,7 +54,7 @@ class TestExtractEndpoint:
         assert resp.status_code == 200
         data = resp.json()["recipe"]
         for key in ("title", "description", "prepTime", "cookTime", "servings",
-                     "ingredients", "instructions", "tags", "notes"):
+                     "ingredients", "instructions", "notes"):
             assert key in data, f"Missing key: {key}"
 
     # ---- payload size guard ------------------------------------------------
