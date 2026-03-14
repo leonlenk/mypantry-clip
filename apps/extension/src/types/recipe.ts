@@ -2,7 +2,7 @@ export interface Recipe {
     id: string; // Unique identifier (hash of the URL)
     url: string; // Source URL
     title: string;
-    description: string;
+    semantic_summary?: string; // LLM-written dense summary for high-quality semantic search
     author?: string;
     image?: string; // URL to the main recipe image
     isFavorite?: boolean;

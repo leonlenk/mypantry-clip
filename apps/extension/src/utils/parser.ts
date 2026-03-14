@@ -53,7 +53,7 @@ interface Recipe {
   id: string; // Generate a unique identifier (e.g., a short hash or slug based on the url)
   url: string; // Source URL
   title: string;
-  description: string;
+  semantic_summary: string; // 1-2 sentences YOU write, displayed on the recipe card. ALWAYS start with 'savory' or 'sweet', then the course type ('main dish', 'dessert', 'side dish', 'breakfast', 'snack', 'appetizer'). Cover: cuisine type, texture/consistency, vegetable-heavy vs meat-centric, key ingredients, dietary flags. E.g.: "A savory, hearty main dish — Italian-American baked chicken pasta with a golden breadcrumb crust." / "A sweet Japanese-inspired dessert with matcha and caramel custard. Vegetarian, gluten-free."
   author?: string; // If found
   image?: string; // If an image URL is obvious in the text or metadata provided (optional)
   prepTimeMinutes?: number; // Convert to minutes as a number
@@ -77,7 +77,7 @@ interface Ingredient {
   us_unit: string | null; // US volume unit if present
   metric_amount: number | null; // Metric weight/volume if present
   metric_unit: string | null; // Metric unit if present
-  item: string; // The primary ingredient name ONLY. NO parentheses.
+  item: string; // The minimal semantic core ingredient name — strip size/quality adjectives and cooking states. NO parentheses. E.g.: "olive oil" not "extra virgin olive oil", "chicken thighs" not "boneless skinless chicken thighs", "onion" not "large yellow onion". Prep actions go in preparation, alternatives go in subtext.
   preparation?: string; // A cooking action ONLY (e.g. "sifted", "chopped", "melted", "softened"). Omit if none.
   subtext?: string; // Alternative ingredients or minor descriptive context.
   note_references?: number[]; // List of note indexes (1-based) referencing the Recipe's notes array.
@@ -108,6 +108,7 @@ Constraints:
 12. IF NO RECIPE IS FOUND ON THE PAGE, YOU MUST OUTPUT EXACTLY: { "error": "No recipe found on this page." }
 13. EXTREMELY IMPORTANT: Keep \`rawText\` and \`instructions\` concise! DO NOT output excessively verbose descriptions.
 14. MINIFY YOUR JSON: Output the JSON exactly as a single continuous line. Do NOT use newlines, indentation, or extra spaces. This saves output tokens and prevents truncation.
+15. SEMANTIC SUMMARY: Write a \`semantic_summary\` of 1-2 sentences displayed directly on the recipe card. ALWAYS start with 'savory' or 'sweet', then include the course type ('main dish', 'dessert', 'side dish', 'breakfast', 'snack', 'appetizer', 'drink'). Then cover: cuisine type, texture/consistency (creamy, crispy, soupy, hearty, light, rich), vegetable-heavy vs meat-centric, cooking method, key primary ingredients, AND applicable dietary flags (vegan, vegetarian, gluten-free, dairy-free, contains nuts, high-protein, etc.). Do NOT copy the scraped description. Write original engaging prose. E.g.: "A savory, hearty main dish — Italian-American baked chicken pasta with a golden breadcrumb crust. Comforting and indulgent, ready in under an hour." / "A sweet Japanese-inspired dessert with a vibrant matcha flavour and rich caramel custard base. Vegetarian and gluten-free." / "A light, savory main dish — vegetable-heavy Thai green curry with silken tofu and coconut milk. Vegan, 30 minutes."
 `;
 
     // Build the user prompt based on which extraction path was taken.
@@ -226,13 +227,13 @@ Extract the recipe into the specified JSON format.
             }
 
             // Map backend Recipe model to extension Recipe model
-            // Backend: title, description, prepTime, cookTime, servings, ingredients (name, amount, unit), instructions (strings)
+            // Backend: title, semantic_summary, prepTime, cookTime, servings, ingredients (name, amount, unit), instructions (strings)
             const recipeData: Recipe = {
                 id: Math.random().toString(36).substring(7),
                 url,
                 createdAt: Date.now(),
                 title: cloudData.recipe.title,
-                description: cloudData.recipe.description,
+                semantic_summary: cloudData.recipe.semantic_summary || undefined,
                 prepTimeMinutes: cloudData.recipe.prepTime || undefined,
                 cookTimeMinutes: cloudData.recipe.cookTime || undefined,
                 tags: cloudData.recipe.tags || undefined,

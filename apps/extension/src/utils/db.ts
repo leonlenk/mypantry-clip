@@ -199,13 +199,19 @@ export async function deleteRecipe(id: string): Promise<void> {
 }
 
 /**
- * Performs an in-memory vector search across all recipes using Orama.
- * Returns the top-k results sorted by relevance to the query embedding.
+ * Performs an in-memory hybrid search (BM25 full-text + vector similarity) across
+ * all recipes using Orama. Returns the top-k results sorted by combined relevance.
+ *
+ * @param queryEmbedding - The query vector from the embedding model.
+ * @param queryTerm - The raw query text for full-text (BM25) matching.
+ * @param topK - Maximum number of results to return.
+ * @param minScore - Minimum cosine similarity threshold for vector results.
  */
 export async function searchRecipes(
     queryEmbedding: number[],
+    queryTerm: string = "",
     topK = 20,
-    minScore = 0.4 // Lowered threshold to be more permissive (0.65 was too strict)
+    minScore = 0.4
 ): Promise<Recipe[]> {
     const all = await getAllRecipes();
 
@@ -213,6 +219,10 @@ export async function searchRecipes(
         oramaDb = await create({
             schema: {
                 id: "string",
+                title: "string",
+                // Concatenation of semantic_summary (or description) + ingredient names —
+                // indexed for full-text BM25 matching.
+                searchText: "string",
                 embedding: "vector[384]",
             },
         });
@@ -221,7 +231,12 @@ export async function searchRecipes(
             .filter((r) => r.embedding && r.embedding.length === 384)
             .map((r) => ({
                 id: r.id,
-                embedding: r.embedding,
+                title: r.title || "",
+                searchText: [
+                    r.semantic_summary || "",
+                    r.ingredients?.map((i) => i.item).join(" ") || "",
+                ].filter(Boolean).join(" ").trim(),
+                embedding: r.embedding as number[],
             }));
 
         if (docs.length > 0) {
@@ -231,15 +246,29 @@ export async function searchRecipes(
 
     if (!oramaDb) return [];
 
-    const results = await search(oramaDb, {
-        mode: "vector",
-        vector: {
-            value: queryEmbedding,
-            property: "embedding",
-        },
-        similarity: minScore,
-        limit: topK,
-    });
+    const useHybrid = queryTerm.trim().length > 0;
+
+    const results = await search(oramaDb, useHybrid
+        ? {
+            mode: "hybrid",
+            term: queryTerm,
+            vector: {
+                value: queryEmbedding,
+                property: "embedding",
+            },
+            similarity: minScore,
+            limit: topK,
+        }
+        : {
+            mode: "vector",
+            vector: {
+                value: queryEmbedding,
+                property: "embedding",
+            },
+            similarity: minScore,
+            limit: topK,
+        }
+    );
 
     const recipeMap = new Map<string, Recipe>();
     for (const r of all) {

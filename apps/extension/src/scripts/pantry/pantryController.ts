@@ -395,8 +395,13 @@ function toggleRecipeSelection(card: HTMLElement, recipeId: string) {
 
 function selectRecipeRange(toRecipeId: string) {
     if (!lastSelectedRecipeId || visibleRecipeOrder.length === 0) {
+        // No anchor yet — just add (never deselect) and set anchor
+        selectedRecipeIds.add(toRecipeId);
         const card = grid?.querySelector<HTMLElement>(`.recipe-card[data-recipe-id="${toRecipeId}"]`);
-        if (card) toggleRecipeSelection(card, toRecipeId);
+        if (card) setCardSelectedState(card, true);
+        lastSelectedRecipeId = toRecipeId;
+        syncSelectionModeClass();
+        updateSelectionUI();
         return;
     }
 
@@ -404,8 +409,13 @@ function selectRecipeRange(toRecipeId: string) {
     const toIndex = visibleRecipeOrder.indexOf(toRecipeId);
 
     if (fromIndex < 0 || toIndex < 0) {
+        // Anchor not in visible list — add and set anchor
+        selectedRecipeIds.add(toRecipeId);
         const card = grid?.querySelector<HTMLElement>(`.recipe-card[data-recipe-id="${toRecipeId}"]`);
-        if (card) toggleRecipeSelection(card, toRecipeId);
+        if (card) setCardSelectedState(card, true);
+        lastSelectedRecipeId = toRecipeId;
+        syncSelectionModeClass();
+        updateSelectionUI();
         return;
     }
 
@@ -1009,7 +1019,7 @@ function wireSelectionControls() {
         hideBulkTagSuggestions();
     });
 
-    document.addEventListener("keydown", (event: KeyboardEvent) => {
+    document.addEventListener("keydown", async (event: KeyboardEvent) => {
         if (event.key === "Escape" && isBulkTagEditorOpen) {
             event.preventDefault();
             closeBulkTagEditor();
@@ -1024,6 +1034,14 @@ function wireSelectionControls() {
             if (shareConfirmOverlay && !shareConfirmOverlay.classList.contains("hidden")) return;
             if (shareLinksOverlay && !shareLinksOverlay.classList.contains("hidden")) return;
             resetSelection();
+            return;
+        }
+
+        if ((event.key === "Delete" || event.key === "Backspace") && isSelectionMode) {
+            const activeTag = document.activeElement?.tagName;
+            if (activeTag === "INPUT" || activeTag === "TEXTAREA") return;
+            event.preventDefault();
+            await handleBulkDelete();
             return;
         }
 
@@ -1427,13 +1445,24 @@ function renderRecipes(recipes: Recipe[]) {
 }
 
 function wireCardEvents(card: HTMLElement, recipe: Recipe) {
-    // Clicking the card navigates to the detail view
-    card.addEventListener("click", (event: MouseEvent) => {
-        const isShiftClick = event.shiftKey;
+    // Chrome suppresses `click` when Ctrl is held in an extension popup.
+    // Use mousedown to catch it before Chrome intercepts, then skip the
+    // click handler via a flag to avoid double-firing.
+    let pendingCtrlClick = false;
 
-        if (isShiftClick) {
+    card.addEventListener("mousedown", (event: MouseEvent) => {
+        if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.button === 0) {
+            pendingCtrlClick = true;
             selectRecipeRange(recipe.id);
-            return;
+        }
+    });
+
+    // Clicking the card navigates to the detail view.
+    // Plain click in selection mode toggles individual selection.
+    card.addEventListener("click", (event: MouseEvent) => {
+        if (pendingCtrlClick) {
+            pendingCtrlClick = false;
+            return; // handled in mousedown
         }
 
         if (isSelectionMode) {
@@ -1445,6 +1474,7 @@ function wireCardEvents(card: HTMLElement, recipe: Recipe) {
 
     card.querySelector(".select-indicator")?.addEventListener("click", (e) => {
         e.stopPropagation();
+        if (pendingCtrlClick) { pendingCtrlClick = false; return; }
         toggleRecipeSelection(card, recipe.id);
     });
 
@@ -1558,6 +1588,7 @@ async function handleSearch() {
         if (embeddingResult.success && embeddingResult.embedding) {
             const vectorMatches = await searchRecipes(
                 embeddingResult.embedding,
+                query,
                 20
             );
             // Tag hits pinned first, then additional vector results
@@ -1594,6 +1625,24 @@ function wireSearchHandlers() {
         if (e.key === "Enter" && activeTag !== "INPUT" && activeTag !== "TEXTAREA" && activeTag !== "BUTTON") {
             e.preventDefault();
             searchInput?.focus();
+        }
+    });
+
+    // Ctrl+A — select all visible recipes
+    document.addEventListener("keydown", (e: KeyboardEvent) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === "a") {
+            const activeTag = document.activeElement?.tagName;
+            if (activeTag === "INPUT" || activeTag === "TEXTAREA") return;
+            if (visibleRecipeOrder.length === 0) return;
+            e.preventDefault();
+            visibleRecipeOrder.forEach((id) => {
+                selectedRecipeIds.add(id);
+                const card = grid?.querySelector<HTMLElement>(`.recipe-card[data-recipe-id="${id}"]`);
+                if (card) setCardSelectedState(card, true);
+            });
+            lastSelectedRecipeId = visibleRecipeOrder[visibleRecipeOrder.length - 1];
+            syncSelectionModeClass();
+            updateSelectionUI();
         }
     });
 
@@ -1855,7 +1904,7 @@ function wireImportExport() {
                 // (embeddings are excluded from exports to reduce file size)
                 for (const r of recipes) {
                     if (!r.embedding) {
-                        const embeddingText = `${r.title} ${r.description || ""} ${r.tags?.join(" ") || ""}`;
+                        const embeddingText = [r.title, r.semantic_summary || "", ...(r.ingredients?.map((i: any) => i.item) || [])].filter(Boolean).join(". ");
                         const embeddingResult = await chrome.runtime.sendMessage({
                             type: "GENERATE_EMBEDDING",
                             text: embeddingText,

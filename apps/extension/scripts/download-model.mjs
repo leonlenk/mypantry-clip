@@ -64,6 +64,22 @@ async function main() {
     }
 
     console.log('Model download complete.');
+
+    // Copy the ORT WebGPU JSEP runtime files from the transformers package into
+    // public/ort/ so the extension can serve them locally. Without this,
+    // @huggingface/transformers falls back to loading them from CDN at runtime.
+    const ortSrcDir = join(process.cwd(), 'node_modules', '@huggingface', 'transformers', 'dist');
+    const ortDestDir = join(process.cwd(), 'public', 'ort');
+    const ortFiles = [
+        'ort-wasm-simd-threaded.jsep.mjs',
+        'ort-wasm-simd-threaded.jsep.wasm',
+    ];
+
+    await fs.mkdir(ortDestDir, { recursive: true });
+    for (const file of ortFiles) {
+        await fs.copyFile(join(ortSrcDir, file), join(ortDestDir, file));
+        console.log(`Copied ${file} → public/ort/`);
+    }
 }
 
 main().catch((err) => {

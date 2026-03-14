@@ -11,7 +11,7 @@ client = genai.Client(
 )
 
 class Ingredient(BaseModel):
-    name: str = Field(description="The core ingredient name ONLY, absolutely NO parentheses")
+    name: str = Field(description="The minimal semantic core ingredient name — strip size/quality adjectives (e.g. 'olive oil' not 'extra virgin olive oil', 'chicken thighs' not 'boneless skinless chicken thighs'). NO parentheses.")
     us_amount: float | None = Field(default=None, description="US volume quantity if present (e.g. cups, oz, lbs)")
     us_unit: str | None = Field(default=None, description="US volume unit if present")
     metric_amount: float | None = Field(default=None, description="Metric weight/volume if present (e.g. grams, ml)")
@@ -23,7 +23,7 @@ class Ingredient(BaseModel):
 
 class Recipe(BaseModel):
     title: str = Field(description="Title of the recipe")
-    description: Optional[str] = Field(default="", description="Description of the recipe")
+    semantic_summary: str = Field(default="", description="A 1-2 sentence human-readable description you write that will be displayed on the recipe card. ALWAYS include: (1) 'savory' or 'sweet' as one of the first words, (2) the course type (e.g. 'main dish', 'dessert', 'appetizer', 'side dish', 'breakfast', 'snack', 'drink'), (3) cuisine type, (4) texture/consistency (creamy, crispy, soupy, hearty, light), (5) whether vegetable-heavy or meat-centric, (6) key primary ingredients, (7) applicable dietary flags (vegan, vegetarian, gluten-free, dairy-free, contains nuts, high-protein, etc.). Examples: 'A savory, hearty main dish — Italian-American baked chicken pasta with a golden breadcrumb crust. Comforting and indulgent, ready in under an hour.' / 'A sweet Japanese-inspired dessert with a vibrant matcha flavour and rich caramel custard base. Vegetarian and gluten-free.' / 'A light, savory main dish — vegetable-heavy Thai green curry with silken tofu and coconut milk. Vegan, ready in 30 minutes.'")
     prepTime: Optional[int] = Field(default=None, description="Preparation time in minutes")
     cookTime: Optional[int] = Field(default=None, description="Cooking time in minutes")
     servings: Optional[int] = Field(default=1, description="Number of servings")
@@ -43,7 +43,7 @@ def extract_recipe(payload: str) -> Recipe:
     prompt = f"""Extract the recipe from the following HTML or JSON-LD payload.
     
 CRITICALLY IMPORTANT INSTRUCTIONS:
-1. The 'name' field MUST contain the primary ingredient name. Keep it concise but descriptive. NO parentheses.
+1. The 'name' field MUST contain the minimal semantic core ingredient name — strip size/quality adjectives and cooking states. NO parentheses. Examples: use "olive oil" not "extra virgin olive oil", "chicken thighs" not "boneless skinless chicken thighs", "onion" not "large yellow onion finely diced". Prep actions go in 'preparation', alternatives go in 'subtext'.
 2. The 'preparation' field MUST ONLY contain cooking actions (e.g. "sifted", "chopped", "melted").
 3. AMOUNTS AND UNITS: If a recipe provides both US and Metric measurements (e.g., "1 cup / 120g", "7oz / 200g"), you MUST extract BOTH into their respective us_amount/us_unit and metric_amount/metric_unit fields. Do not put them in subtext.
 4. The 'subtext' field MUST contain alternative ingredient suggestions or descriptive context (e.g. "or substitute other plain biscuits", "at room temperature"). NO parentheses.
@@ -53,6 +53,7 @@ CRITICALLY IMPORTANT INSTRUCTIONS:
    c) Add the 1-based index of that note to the `Ingredient.note_references` array (e.g., `[1]`).
 6. NEVER put parentheses ( ) in ANY field.
 7. If the recipe has multiple components (e.g. "Cake" and "Frosting"), you MUST extract these section names and put them in the "group" field for EVERY corresponding ingredient.
+8. Write a `semantic_summary` of 1-2 sentences that will be displayed directly on the recipe card. ALWAYS start with 'savory' or 'sweet', then include the course type (e.g. 'main dish', 'dessert', 'side dish', 'breakfast', 'snack', 'appetizer', 'drink'). Then cover: cuisine type, texture/consistency (creamy, crispy, soupy, hearty, light, rich), vegetable-heavy vs meat-centric, cooking method, key primary ingredients, AND applicable dietary flags (vegan, vegetarian, gluten-free, dairy-free, contains nuts, high-protein, etc.). Do NOT copy the scraped page description verbatim. Write original, engaging prose. Examples: "A savory, hearty main dish — Italian-American baked chicken pasta with a golden breadcrumb crust. Comforting and indulgent, ready in under an hour." / "A sweet Japanese-inspired dessert with a vibrant matcha flavour and rich caramel custard base. Vegetarian and gluten-free." / "A light, savory main dish — vegetable-heavy Thai green curry with silken tofu and coconut milk. Vegan, 30 minutes."
 
 Payload:
 {payload}

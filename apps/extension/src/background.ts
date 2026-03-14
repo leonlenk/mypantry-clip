@@ -351,10 +351,9 @@ async function executeExtractionInBackground(url: string, tabId: number, apiKey:
 
         const textToEmbed = [
             recipeData.title,
-            recipeData.description,
-            ...(recipeData.tags || []),
+            recipeData.semantic_summary,
             ...(recipeData.ingredients?.map((i: any) => i.item) || []),
-        ].join(", ");
+        ].filter(Boolean).join(". ");
 
         await setupOffscreenDocument();
 
@@ -680,9 +679,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
                     const textToEmbed = [
                         recipe.title,
-                        recipe.description,
+                        recipe.semantic_summary,
                         ...(recipe.ingredients?.map((i: any) => i.item) || []),
-                    ].filter(Boolean).join(", ");
+                    ].filter(Boolean).join(". ");
 
                     const embeddingResult: { success: boolean; embedding?: number[]; error?: string } =
                         await chrome.runtime.sendMessage({

@@ -27,20 +27,38 @@
             // @ts-ignore
             env.localModelPath = chrome.runtime.getURL("models");
 
+            // Override the ORT WASM/JSEP base path. By default transformers.web.js sets
+            // this to the CDN (cdn.jsdelivr.net) so it can find ort-wasm-simd-threaded.jsep.mjs
+            // and .wasm at runtime. We copy those files into public/ort/ via download-model.mjs
+            // so they are bundled in the extension and served from our own origin.
+            // @ts-ignore
+            env.backends.onnx.wasm.wasmPaths = chrome.runtime.getURL("ort/");
+
             let extractor: any = null;
+
+            async function resolveDevice(): Promise<string> {
+                try {
+                    if (navigator.gpu) {
+                        const adapter = await navigator.gpu.requestAdapter();
+                        if (adapter) return "webgpu";
+                    }
+                } catch (_) {}
+                console.warn("[MyPantry Offscreen] WebGPU unavailable, falling back to WASM.");
+                return "wasm";
+            }
 
             async function getExtractor() {
                 if (!extractor) {
                     // snowflake-arctic-embed-s int8 (model_quantized.onnx, ~34MB, 384-dim).
-                    // Using dtype:"q8" targets the 8-bit quantized ONNX file — a good balance
-                    // of size (~34MB) and quality. Running in the offscreen document avoids
-                    // the Service Worker 30-second timeout limit.
+                    // Uses WebGPU when available for best performance; falls back to WASM
+                    // (CPU) on machines without a usable GPU adapter.
+                    const device = await resolveDevice();
                     extractor = await pipeline(
                         "feature-extraction",
                         "Snowflake/snowflake-arctic-embed-s",
                         {
                             dtype: "q8",
-                            device: "webgpu",
+                            device,
                         }
                     );
                 }

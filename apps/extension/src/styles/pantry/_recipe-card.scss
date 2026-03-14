@@ -4,6 +4,7 @@
  */
 
 .recipe-card {
+    user-select: none;
     display: flex;
     flex-direction: column;
     padding: var(--spacing-xl);

@@ -70,8 +70,9 @@ function buildContentHtml(recipe: Recipe): string {
     const visibleTagsHtml = sortedTags.slice(0, MAX_TAGS).map((t) => `<span class="tag">${t}</span>`).join("");
     const overflowChip = buildOverflowChip(sortedTags.slice(MAX_TAGS));
 
-    const description = (recipe.description || "").slice(0, 140);
-    const truncated = (recipe.description || "").length > 140 ? "..." : "";
+    const displayText = recipe.semantic_summary || "";
+    const description = displayText.slice(0, 160);
+    const truncated = displayText.length > 160 ? "..." : "";
 
     const innerHtml = `
         <p class="desc">${description}${truncated}</p>

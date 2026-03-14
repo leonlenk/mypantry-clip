@@ -89,6 +89,25 @@ body {
         white-space: nowrap;
     }
 
+    .bulk-kbd-hints {
+        font-size: 0.72rem;
+        color: var(--color-surface);
+        opacity: 0.6;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 2px;
+
+        kbd {
+            font-family: inherit;
+            font-size: 0.7rem;
+            font-weight: 600;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 4px;
+            padding: 1px 5px;
+        }
+    }
+
     .bulk-action-buttons {
         display: inline-flex;
         align-items: center;
@@ -755,6 +774,10 @@ body {
         .bulk-selected-count {
             width: 100%;
             padding-left: 0;
+        }
+
+        .bulk-kbd-hints {
+            display: none;
         }
 
         .bulk-action-buttons {

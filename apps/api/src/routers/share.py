@@ -280,7 +280,7 @@ h2 { font-family: 'Fraunces', serif; font-size: 1.3rem; margin-bottom: .9rem; pa
 
 def _render_single_recipe_page(recipe: dict[str, Any], expiry_days: int) -> str:
     title = recipe.get("title", "Untitled Recipe")
-    description = recipe.get("description", "")
+    description = recipe.get("semantic_summary", "")
     author = recipe.get("author", "")
     image = recipe.get("image", "")
     servings = recipe.get("servings")
@@ -370,7 +370,7 @@ _PANTRY_CSS = """
 
 def _render_mini_card(recipe: dict[str, Any], index: int) -> str:
     title = recipe.get("title", "Untitled")
-    description = recipe.get("description", "")
+    description = recipe.get("semantic_summary", "")
     image = recipe.get("image", "")
     ingredients: list = recipe.get("ingredients", [])
 

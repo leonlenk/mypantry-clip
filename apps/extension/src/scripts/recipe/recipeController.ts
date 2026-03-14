@@ -249,7 +249,7 @@ function renderRecipe(recipe: any) {
     if (titleEl) titleEl.textContent = recipe.title;
 
     const descEl = document.getElementById("recipe-desc");
-    if (descEl && recipe.description) descEl.textContent = recipe.description;
+    if (descEl && recipe.semantic_summary) descEl.textContent = recipe.semantic_summary;
 
     const sourceLink = document.getElementById("source-link") as HTMLAnchorElement;
     if (sourceLink && recipe.url) {
