@@ -211,7 +211,7 @@ export async function searchRecipes(
     queryEmbedding: number[],
     queryTerm: string = "",
     topK = 20,
-    minScore = 0.4
+    minScore = 0.6
 ): Promise<Recipe[]> {
     const all = await getAllRecipes();
 

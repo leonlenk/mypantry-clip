@@ -837,7 +837,23 @@ async function handleBulkDelete() {
     const toDelete = await confirmDeleteModal(ids, titles);
     if (toDelete.length === 0) return;
 
+    // Collect URLs before deletion to fix savedUrls race condition:
+    // parallel deleteRecipe calls each do a concurrent read-modify-write on savedUrls,
+    // so the last writer wins and some URLs survive. We do one authoritative cleanup after.
+    const urlsToRemove = toDelete
+        .map((id) => recipeMap.get(id)?.url)
+        .filter((url): url is string => Boolean(url));
+
     await Promise.all(toDelete.map((id) => deleteRecipe(id)));
+
+    // Single authoritative savedUrls update to handle the race condition above
+    if (urlsToRemove.length > 0 && typeof chrome !== "undefined" && chrome.storage?.local) {
+        const data = await chrome.storage.local.get("savedUrls");
+        let urls: string[] = Array.isArray(data.savedUrls) ? data.savedUrls : [];
+        urls = urls.filter((u) => !urlsToRemove.includes(u));
+        await chrome.storage.local.set({ savedUrls: urls });
+    }
+
     resetSelection();
     await loadRecipes();
 }
