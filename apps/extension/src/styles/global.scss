@@ -14,13 +14,17 @@
   /* Oat Milk */
   --color-text: #4A4036;
   /* Espresso (Primary) */
-  --color-text-muted: #8C7F70;
-  /* Warm Taupe (Secondary) */
-  --color-text-meta: #C4B7A6;
-  /* Pale Latte (Tertiary) */
+  --color-text-muted: #6B5D4F;
+  /* Warm Taupe (Secondary) – 6.1:1 on bg */
+  --color-text-meta: #7A6B5B;
+  /* Warm Brown (Tertiary) – 5.0:1 on bg */
   --color-accent: #E5B299;
   /* Warm Apricot (Accent) */
   --color-accent-hover: #D69E83; // Slightly darker for hover state
+  --color-accent-text: #8B5E3C;
+  /* Dark Amber – used when accent appears as text (5.4:1 on bg) */
+  --color-on-accent: var(--color-on-accent);
+  /* Dark Espresso – text/icons placed on top of accent-colored backgrounds */
 
   --color-surface-rgb: 244, 239, 230;
 
@@ -45,9 +49,12 @@
     --color-border: #3A342D;
     --color-text: #E8E3D9;
     --color-text-muted: #C4B8A8;
-    --color-text-meta: #8A7D6E;
+    --color-text-meta: #9A8D7E;
+    /* Slightly lighter than before – 5.6:1 on dark bg */
     --color-accent: #C48E72;
     --color-accent-hover: #D59F83;
+    --color-accent-text: #C48E72;
+    /* Same as accent – already 6.4:1 on dark bg */
     --color-surface-rgb: 36, 32, 28;
     --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
@@ -88,7 +95,7 @@ p {
 }
 
 a {
-  color: var(--color-accent);
+  color: var(--color-accent-text);
   text-decoration: none;
   transition: color 0.2s ease;
 
@@ -122,7 +129,7 @@ button,
 
   &.primary {
     background-color: var(--color-accent);
-    color: #2F261F;
+    color: var(--color-on-accent);
     /* Very dark espresso for high contrast against apricot */
     border-color: var(--color-accent);
     font-weight: 600;
@@ -130,7 +137,7 @@ button,
     &:hover {
       background-color: var(--color-accent-hover);
       border-color: var(--color-accent-hover);
-      color: #2F261F;
+      color: var(--color-on-accent);
     }
   }
 }

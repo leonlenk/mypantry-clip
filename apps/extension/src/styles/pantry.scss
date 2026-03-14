@@ -179,8 +179,8 @@ body {
                 cursor: pointer;
                 user-select: none;
                 background-color: rgba(139, 115, 85, 0.1);
-                color: var(--color-accent);
-                border: 1px solid var(--color-accent);
+                color: var(--color-accent-text);
+                border: 1px solid var(--color-accent-text);
                 position: relative;
                 border-radius: 999px;
                 padding: 2px 8px;
@@ -435,7 +435,7 @@ body {
 
         &:hover {
             opacity: 1;
-            color: var(--color-accent);
+            color: var(--color-accent-text);
             background: rgba(229, 178, 153, 0.15);
         }
     }
@@ -484,7 +484,7 @@ body {
 
         &.danger {
             background: var(--color-accent);
-            color: white;
+            color: var(--color-on-accent);
         }
     }
 }
@@ -584,7 +584,7 @@ body {
 
         &:hover {
             background: var(--color-accent);
-            color: #fff;
+            color: var(--color-on-accent);
             border-color: var(--color-accent);
         }
 
@@ -621,7 +621,7 @@ body {
         border: 1px solid rgba(139, 115, 85, 0.15);
         padding: 4px 10px;
         border-radius: 20px;
-        color: var(--color-accent);
+        color: var(--color-accent-text);
         white-space: nowrap;
     }
 }

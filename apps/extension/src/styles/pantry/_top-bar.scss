@@ -49,7 +49,7 @@
 
                 &:hover {
                     background-color: var(--color-accent);
-                    color: white;
+                    color: var(--color-on-accent);
                     border-color: var(--color-accent);
                 }
 
@@ -95,7 +95,7 @@
 
                 &.active {
                     background-color: var(--color-accent);
-                    color: white;
+                    color: var(--color-on-accent);
                 }
             }
         }
@@ -166,7 +166,7 @@
 
                 &.active {
                     background: var(--color-accent);
-                    color: white;
+                    color: var(--color-on-accent);
                 }
             }
         }

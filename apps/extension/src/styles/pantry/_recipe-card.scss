@@ -243,7 +243,7 @@
             &:hover,
             &.active {
                 background-color: var(--color-surface);
-                color: var(--color-accent);
+                color: var(--color-accent-text);
                 border-color: var(--color-accent);
             }
         }
@@ -318,7 +318,7 @@
             border: 1px solid rgba(139, 115, 85, 0.15);
             padding: 4px 10px;
             border-radius: 20px;
-            color: var(--color-accent);
+            color: var(--color-accent-text);
 
             &.domain-tag {
                 background-color: transparent;
@@ -415,7 +415,7 @@
         .status-badge {
             margin-top: auto;
             font-size: 0.8rem;
-            color: var(--color-accent);
+            color: var(--color-accent-text);
             font-weight: 600;
             font-style: italic;
             display: flex;
@@ -525,7 +525,7 @@
         .tag-overflow {
             background-color: rgba(139, 115, 85, 0.08);
             border: 1px solid rgba(139, 115, 85, 0.15);
-            color: var(--color-accent);
+            color: var(--color-accent-text);
         }
     }
 
@@ -613,7 +613,7 @@
         .tag-overflow {
             background-color: rgba(139, 115, 85, 0.08);
             border: 1px solid rgba(139, 115, 85, 0.15);
-            color: var(--color-accent);
+            color: var(--color-accent-text);
         }
     }
 
@@ -628,7 +628,7 @@
 
         &:hover {
             opacity: 1;
-            color: var(--color-accent);
+            color: var(--color-accent-text);
         }
     }
 }

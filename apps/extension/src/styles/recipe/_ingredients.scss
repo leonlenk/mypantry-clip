@@ -98,7 +98,7 @@
             border: 1px solid rgba(139, 115, 85, 0.15);
             padding: 4px 12px;
             border-radius: 20px;
-            color: var(--color-accent);
+            color: var(--color-accent-text);
             display: flex;
             align-items: center;
 
@@ -343,7 +343,7 @@
         padding: 0 var(--spacing-md);
         border-radius: var(--radius-md);
         background-color: var(--color-surface);
-        color: var(--color-accent);
+        color: var(--color-accent-text);
         border: 1px solid var(--color-border);
         box-shadow: var(--shadow-md);
         font-size: 0.85rem;
@@ -359,7 +359,7 @@
 
         &:hover {
             background-color: var(--color-accent);
-            color: white;
+            color: var(--color-on-accent);
             border-color: var(--color-accent);
         }
     }
@@ -368,7 +368,7 @@
     // The panel gets padding-bottom so the last ingredient scrolls clear of it.
     body.ingredients-open #ingredients-fab {
         background-color: var(--color-accent);
-        color: white;
+        color: var(--color-on-accent);
         border-color: var(--color-accent);
     }
 
