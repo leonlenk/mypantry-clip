@@ -96,9 +96,10 @@ def mock_verify_jwt(app):
 
 @pytest.fixture()
 def mock_rate_limit():
-    """Patches check_rate_limit_and_telemetry to be a no-op."""
-    with patch("src.dependencies.rate_limit.check_rate_limit_and_telemetry") as m:
-        yield m
+    """Patches check_rate_limit_and_telemetry at each router's import site."""
+    with patch("src.routers.extract.check_rate_limit_and_telemetry") as m_extract, \
+         patch("src.routers.substitute.check_rate_limit_and_telemetry") as m_substitute:
+        yield m_extract
 
 
 # ---------------------------------------------------------------------------

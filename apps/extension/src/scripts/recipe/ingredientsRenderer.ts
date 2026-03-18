@@ -6,7 +6,7 @@
  * (re-render after applying a substitution).
  */
 
-import { convertVolumeToWeight, formatUSVolume } from "../../utils/conversions";
+import { convertVolumeToWeight, formatUSVolume, escapeHtml } from "../../utils/conversions";
 import { recipeState } from "./recipeState";
 
 function formatQuantity(q: number): string {
@@ -89,11 +89,11 @@ export function renderIngredients(recipe: any, multiplier: number) {
             }
 
             text = `${displayQuantity}`;
-            if (displayUnit) text += ` ${displayUnit}`;
-            if (ing.item) text += ` ${ing.item}`;
-            if (ing.preparation) text += `, ${ing.preparation}`;
+            if (displayUnit) text += ` ${escapeHtml(displayUnit)}`;
+            if (ing.item) text += ` ${escapeHtml(ing.item)}`;
+            if (ing.preparation) text += `, ${escapeHtml(ing.preparation)}`;
         } else {
-            text = ing.rawText || ing.item;
+            text = escapeHtml(ing.rawText || ing.item);
         }
 
         // Note references as superscripts
@@ -133,11 +133,11 @@ export function renderIngredients(recipe: any, multiplier: number) {
                 }
 
                 subText = `${subDispQuantity}`;
-                if (subDispUnit) subText += ` ${subDispUnit}`;
-                if (sub.item) subText += ` ${sub.item}`;
-                if (sub.preparation) subText += `, ${sub.preparation}`;
+                if (subDispUnit) subText += ` ${escapeHtml(subDispUnit)}`;
+                if (sub.item) subText += ` ${escapeHtml(sub.item)}`;
+                if (sub.preparation) subText += `, ${escapeHtml(sub.preparation)}`;
             } else {
-                subText = sub.rawText || sub.item;
+                subText = escapeHtml(sub.rawText || sub.item);
             }
 
             li.innerHTML = `<span style="text-decoration: line-through; opacity: 0.6; margin-right: 8px;">${text}</span>
@@ -145,11 +145,11 @@ export function renderIngredients(recipe: any, multiplier: number) {
                             <button class="revert-sub btn icon-btn" data-index="${idx}" title="Remove substitution" style="margin-left: 8px; font-size: 0.8em; padding: 2px 5px;">&times;</button>`;
         } else if (typeof ing.substituted === "string") {
             li.innerHTML = `<span style="text-decoration: line-through; opacity: 0.6; margin-right: 8px;">${text}</span>
-                            <span>${ing.substituted}</span>
+                            <span>${escapeHtml(ing.substituted)}</span>
                             <button class="revert-sub btn icon-btn" data-index="${idx}" title="Remove substitution" style="margin-left: 8px; font-size: 0.8em; padding: 2px 5px;">&times;</button>`;
         } else {
             if (ing.subtext) {
-                li.innerHTML = `<span class="ing-text">${text}</span><span class="ing-note">${ing.subtext}</span>`;
+                li.innerHTML = `<span class="ing-text">${text}</span><span class="ing-note">${escapeHtml(ing.subtext)}</span>`;
             } else {
                 li.innerHTML = text;
             }

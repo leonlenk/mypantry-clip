@@ -88,10 +88,11 @@ class TestCheckRateLimitAndTelemetry:
         # The two rate-limit keys must differ
         assert len(set(rate_keys)) == 2
 
-    def test_redis_failure_fails_open(self, _patch_env, mock_redis):
-        """When Redis is down, requests still pass (fail-open strategy)."""
+    def test_redis_failure_fails_closed(self, _patch_env, mock_redis):
+        """When Redis is down, requests are rejected with 503 (fail-closed strategy)."""
         from src.dependencies.rate_limit import check_rate_limit_and_telemetry
 
         mock_redis.incr.side_effect = ConnectionError("Redis down")
-        # Should NOT raise — fail-open by design
-        check_rate_limit_and_telemetry(user_id="u1", endpoint="extract", limit=5)
+        with pytest.raises(HTTPException) as exc_info:
+            check_rate_limit_and_telemetry(user_id="u1", endpoint="extract", limit=5)
+        assert exc_info.value.status_code == 503

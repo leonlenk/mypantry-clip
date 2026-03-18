@@ -38,6 +38,5 @@ def check_rate_limit_and_telemetry(user_id: str, endpoint: str, limit: int = 50,
     except HTTPException:
         raise
     except Exception as e:
-        logger.warning(f"Redis error in rate_limit: {e}")
-        # Fail-open approach if Redis is down, to maintain availability
-        pass
+        logger.error(f"Redis error in rate_limit: {e}")
+        raise HTTPException(status_code=503, detail="Rate limiting service unavailable")

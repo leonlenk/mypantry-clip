@@ -3,6 +3,7 @@
  */
 
 import feather from "feather-icons";
+import { escapeHtml } from "../../utils/conversions";
 
 // ─── DOM handles ─────────────────────────────────────────────────────────────
 
@@ -102,7 +103,7 @@ export function confirmShareModal(initialIds: string[], initialTitles: string[])
             pending.forEach((title, id) => {
                 const li = document.createElement("li");
                 li.dataset.id = id;
-                li.innerHTML = `<span>${title}</span><button class="delete-list-remove" title="Remove from list">${xIcon}</button>`;
+                li.innerHTML = `<span>${escapeHtml(title)}</span><button class="delete-list-remove" title="Remove from list">${xIcon}</button>`;
                 li.querySelector("button")!.addEventListener("click", () => {
                     pending.delete(id);
                     if (pending.size === 0) { onCancel(); return; }
@@ -154,7 +155,7 @@ export function confirmDeleteModal(initialIds: string[], initialTitles: string[]
             pending.forEach((title, id) => {
                 const li = document.createElement("li");
                 li.dataset.id = id;
-                li.innerHTML = `<span>${title}</span><button class="delete-list-remove" title="Remove from list">${xIcon}</button>`;
+                li.innerHTML = `<span>${escapeHtml(title)}</span><button class="delete-list-remove" title="Remove from list">${xIcon}</button>`;
                 li.querySelector("button")!.addEventListener("click", () => {
                     pending.delete(id);
                     if (pending.size === 0) { onCancel(); return; }
