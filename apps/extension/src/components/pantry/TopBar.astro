@@ -5,6 +5,8 @@ const downloadIcon =
     feather.icons["download"]?.toSvg({ width: 16, height: 16 }) || "";
 const uploadIcon =
     feather.icons["upload"]?.toSvg({ width: 16, height: 16 }) || "";
+const plusIcon =
+    feather.icons["plus"]?.toSvg({ width: 16, height: 16 }) || "";
 
 // File-explorer-style view icons (inline SVG for precise control)
 const largeViewIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8"/><rect x="13" y="3" width="8" height="8"/><rect x="3" y="13" width="8" height="8"/><rect x="13" y="13" width="8" height="8"/></svg>`;
@@ -42,7 +44,7 @@ const listViewIcon = feather.icons["list"]?.toSvg({ width: 15, height: 15 }) || 
             </div>
         </div>
 
-        <!-- RIGHT: Tag Dropdown -->
+        <!-- RIGHT: Actions -->
         <div class="right-section">
             <input
                 type="file"
@@ -60,6 +62,11 @@ const listViewIcon = feather.icons["list"]?.toSvg({ width: 15, height: 15 }) || 
                 class="action-btn"
                 title="Export Backup"
                 set:html={downloadIcon}></button>
+            <a
+                href="recipe-edit.html"
+                class="btn primary new-recipe-btn"
+                title="Create new recipe"
+                set:html={`${plusIcon} New Recipe`}></a>
         </div>
     </div>
 </header>

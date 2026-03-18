@@ -43,6 +43,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     injectUnitDataLists();
     const urlParams = new URLSearchParams(window.location.search);
     const recipeId = urlParams.get("id");
+    const isNew = !recipeId;
 
     document.getElementById("cancel-edit-btn")?.addEventListener("click", () => {
         window.location.href = recipeId
@@ -50,22 +51,34 @@ document.addEventListener("DOMContentLoaded", async () => {
             : "pantry.html";
     });
 
-    if (!recipeId) {
-        showError();
-        return;
-    }
-
     let recipe: any;
-    try {
-        recipe = await getRecipe(recipeId);
-        if (!recipe) {
+
+    if (isNew) {
+        // Blank recipe for manual creation
+        recipe = {
+            id: `manual-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            url: `manual://created-by-user`,
+            title: "",
+            servings: null,
+            ingredients: [],
+            instructions: [],
+            notes: [],
+            createdAt: Date.now(),
+        };
+        const saveBtn = document.getElementById("save-edit-btn") as HTMLButtonElement;
+        if (saveBtn) saveBtn.textContent = "Create Recipe";
+    } else {
+        try {
+            recipe = await getRecipe(recipeId!);
+            if (!recipe) {
+                showError();
+                return;
+            }
+        } catch (e) {
+            console.error(e);
             showError();
             return;
         }
-    } catch (e) {
-        console.error(e);
-        showError();
-        return;
     }
 
     populateForm(recipe);
@@ -75,12 +88,31 @@ document.addEventListener("DOMContentLoaded", async () => {
         btn.disabled = true;
         btn.textContent = "Saving…";
         try {
-            await saveForm(recipe);
-            window.location.href = `recipe.html?id=${recipeId}`;
+            const saved = await saveForm(recipe);
+            if (isNew) {
+                // Generate embedding for the new recipe before navigating
+                try {
+                    const embeddingText = [
+                        saved.title,
+                        saved.semantic_summary,
+                        ...(saved.ingredients?.map((i: any) => i.item) || []),
+                    ].filter(Boolean).join(". ");
+                    if (embeddingText) {
+                        const result: { success: boolean; embedding?: number[] } =
+                            await chrome.runtime.sendMessage({ type: "generate-embedding", text: embeddingText });
+                        if (result?.success && result.embedding) {
+                            await saveRecipeLocally({ ...saved, embedding: result.embedding });
+                        }
+                    }
+                } catch {
+                    // Embedding is optional — proceed without it
+                }
+            }
+            window.location.href = `recipe.html?id=${recipe.id}`;
         } catch (e) {
             console.error(e);
             btn.disabled = false;
-            btn.textContent = "Save Changes";
+            btn.textContent = isNew ? "Create Recipe" : "Save Changes";
         }
     });
 });
@@ -328,7 +360,7 @@ function createRemoveBtn(onClick: () => void): HTMLButtonElement {
 
 // ─── Save form ────────────────────────────────────────────────────────────────
 
-async function saveForm(originalRecipe: any) {
+async function saveForm(originalRecipe: any): Promise<any> {
     const recipe = { ...originalRecipe };
 
     // Meta fields
@@ -382,4 +414,5 @@ async function saveForm(originalRecipe: any) {
         .filter(Boolean);
 
     await saveRecipeLocally(recipe);
+    return recipe;
 }
