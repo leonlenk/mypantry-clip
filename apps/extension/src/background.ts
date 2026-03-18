@@ -31,6 +31,19 @@ async function setActiveExtractions(map: Record<string, ExtractionState>): Promi
     await chrome.storage.session.set({ activeExtractions: map });
 }
 
+async function isCancelled(url: string): Promise<boolean> {
+    const stored = await chrome.storage.session.get("cancelledExtractions");
+    const list = (stored.cancelledExtractions as string[]) ?? [];
+    return list.includes(url);
+}
+
+async function markCancelled(url: string): Promise<void> {
+    const stored = await chrome.storage.session.get("cancelledExtractions");
+    const list = (stored.cancelledExtractions as string[]) ?? [];
+    if (!list.includes(url)) list.push(url);
+    await chrome.storage.session.set({ cancelledExtractions: list });
+}
+
 // Keep-alive mechanism to prevent service worker from sleeping during long LLM requests
 let keepAliveInterval: any = null;
 let activeJobsCount = 0;
@@ -196,6 +209,7 @@ async function setupOffscreenDocument() {
 
 async function updateExtractionStatus(url: string, tabId: number, status: string, isError: boolean = false, isComplete: boolean = false, recipeTitle?: string) {
     const normUrl = normalizeUrl(url);
+    if (await isCancelled(normUrl)) return;
     const map = await getActiveExtractions();
     const existingTitle = map[normUrl]?.title;
     const finalTitle = recipeTitle || existingTitle;
@@ -370,6 +384,10 @@ async function executeExtractionInBackground(url: string, tabId: number, apiKey:
             console.warn("[MyPantry] Embedding failed, saving without vector:", embeddingResult?.error);
         }
 
+        if (await isCancelled(url)) {
+            console.log(`[MyPantry] Extraction for ${url} was cancelled, not saving.`);
+            return;
+        }
         await updateExtractionStatus(url, tabId, "Saving to local database...");
         console.log("[MyPantry] Saving recipe to IndexedDB...");
         await saveRecipeLocally(recipeData);
@@ -539,6 +557,19 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         (async () => {
             const map = await getActiveExtractions();
             sendResponse({ extractions: map });
+        })();
+        return true;
+    }
+
+    if (message.type === 'CANCEL_EXTRACTION') {
+        const { url } = message;
+        const normUrl = normalizeUrl(url);
+        (async () => {
+            await markCancelled(normUrl);
+            const map = await getActiveExtractions();
+            delete map[normUrl];
+            await setActiveExtractions(map);
+            sendResponse({ success: true });
         })();
         return true;
     }

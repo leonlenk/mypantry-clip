@@ -209,11 +209,40 @@ export function buildSmallCardHtml(recipe: Recipe): string {
 
 /**
  * Returns the inner HTML for an in-progress extraction placeholder card.
+ * Matches the structure of the active view mode so the placeholder fits in naturally.
  */
-export function buildPlaceholderHtml(title: string, status: string): string {
+export function buildPlaceholderHtml(title: string, status: string, viewMode: string = "large", url: string = ""): string {
+    const cancelBtn = `<button class="cancel-extraction-btn" data-url="${url}" title="Cancel extraction" aria-label="Cancel extraction">${safeIcon("x-circle", { width: 16, height: 16 })}</button>`;
+
+    if (viewMode === "small") {
+        return `
+            <button class="favorite-btn" aria-hidden="true" style="visibility:hidden;pointer-events:none;"></button>
+            <button class="select-indicator" aria-hidden="true" style="visibility:hidden;pointer-events:none;"></button>
+            <span class="small-card-title">${title}</span>
+            <div class="small-card-tags"></div>
+            <span class="status-badge">${status}</span>
+            ${cancelBtn}
+        `;
+    }
+
+    if (viewMode === "medium") {
+        return `
+            <div class="medium-card-image skeleton-placeholder-image"></div>
+            <div class="medium-card-body">
+                <div class="card-header">
+                    <h3>${title}</h3>
+                    <div class="card-actions">${cancelBtn}</div>
+                </div>
+                <div class="skeleton-meta"></div>
+                <div class="status-badge">${status}</div>
+            </div>
+        `;
+    }
+
     return `
         <div class="card-header">
-            <h3 class="skeleton-title" style="overflow-wrap: anywhere; opacity: 0.8; margin-bottom: 0; background: none; animation: none;">${title}</h3>
+            <h3>${title}</h3>
+            <div class="card-actions">${cancelBtn}</div>
         </div>
         <div class="skeleton-meta"></div>
         <div class="skeleton-text"></div>

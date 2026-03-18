@@ -309,6 +309,24 @@
         animation: fadeOut 0.5s ease forwards !important;
     }
 
+    .cancel-extraction-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0.2rem 0.4rem;
+        border-radius: var(--radius-sm);
+        color: var(--color-text-muted);
+        line-height: 1;
+        flex-shrink: 0;
+        transition: all 0.18s ease;
+        pointer-events: auto; // Override skeleton's pointer-events: none
+
+        &:hover {
+            background: rgba(220, 38, 38, 0.1);
+            color: #dc2626;
+        }
+    }
+
     &.skeleton {
         pointer-events: none;
         background: linear-gradient(145deg, var(--color-surface) 0%, var(--color-bg) 100%);
@@ -384,6 +402,24 @@
 }
 
 // ── Medium card view ──────────────────────────────────────────────────────────
+
+.view-medium .recipe-card.skeleton {
+    .skeleton-placeholder-image {
+        width: 100%;
+        height: 130px;
+        flex-shrink: 0;
+        background: linear-gradient(90deg,
+            rgba(139, 115, 85, 0.05) 25%,
+            rgba(139, 115, 85, 0.12) 50%,
+            rgba(139, 115, 85, 0.05) 75%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite linear;
+    }
+
+    .status-badge {
+        margin-top: auto;
+    }
+}
 
 .view-medium .recipe-card {
     padding: 0;
@@ -473,6 +509,18 @@
 }
 
 // ── Small / list card view ────────────────────────────────────────────────────
+
+.view-small .recipe-card.skeleton {
+    .status-badge {
+        margin-top: 0;
+        flex-shrink: 0;
+    }
+
+    .cancel-extraction-btn {
+        margin-left: auto;
+        flex-shrink: 0;
+    }
+}
 
 .view-small .recipe-card {
     flex-direction: row;

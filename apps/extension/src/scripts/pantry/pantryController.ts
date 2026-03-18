@@ -70,6 +70,7 @@ let currentFilter = localStorage.getItem("pantryFilter") || "all";
 const UNIT_PREFERENCE_KEY = "preferredUnitSystem";
 const VIEW_MODE_KEY = "pantryViewMode";
 let currentViewMode = localStorage.getItem(VIEW_MODE_KEY) || "large";
+let skipNextViewTransition = false;
 let currentTagFilters: string[] = [];
 let currentSuggestions: string[] = [];
 let selectedSuggestionIndex = -1;
@@ -215,6 +216,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         btn.addEventListener("click", () => {
             currentViewMode = btn.dataset.view || "large";
             localStorage.setItem(VIEW_MODE_KEY, currentViewMode);
+            skipNextViewTransition = true;
+            if (grid) grid.innerHTML = ""; // Clear before CSS class changes to prevent image flash
             applyViewMode();
             loadRecipes();
         });
@@ -279,6 +282,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     await loadRecipes();
+    wireCancelExtractionHandler();
     wireExtractionListener();
     wireSearchHandlers();
     wireSelectionControls();
@@ -1068,6 +1072,33 @@ function wireSelectionControls() {
 
 // ─── Extraction live-update listener ────────────────────────────────────────
 
+function wireCancelExtractionHandler() {
+    if (!grid) return;
+    grid.addEventListener("click", (e) => {
+        const btn = (e.target as Element).closest<HTMLElement>(".cancel-extraction-btn");
+        if (!btn) return;
+        e.stopPropagation();
+        const url = btn.dataset.url || "";
+        delete activeExtractions[url];
+        const safeId = "placeholder-" + url.replace(/[^a-zA-Z0-9_-]/g, "");
+        const placeholderEl = document.getElementById(safeId);
+        if (placeholderEl) {
+            placeholderEl.classList.add("skeleton-fade-out");
+            placeholderEl.addEventListener("animationend", () => {
+                placeholderEl.remove();
+                const remaining = grid?.querySelectorAll(".recipe-card").length ?? 0;
+                if (remaining === 0) {
+                    grid?.classList.add("hidden");
+                    emptyState?.classList.remove("hidden");
+                }
+            }, { once: true });
+        }
+        if (typeof chrome !== "undefined" && chrome.runtime?.sendMessage) {
+            chrome.runtime.sendMessage({ type: "CANCEL_EXTRACTION", url }).catch(() => {});
+        }
+    });
+}
+
 function wireExtractionListener() {
     if (typeof chrome === "undefined" || !chrome.runtime?.onMessage) return;
 
@@ -1364,10 +1395,13 @@ async function loadRecipes() {
     if (recipeCountEl)
         recipeCountEl.textContent = `${recipes.length} recipe${recipes.length !== 1 ? "s" : ""}`;
 
-    // Wrap DOM update in a view transition for smooth animations when supported
-    if ((document as any).startViewTransition) {
+    // Wrap DOM update in a view transition for smooth animations when supported.
+    // Skip when switching view modes — morphing cards between layouts causes
+    // images to fly across the screen. Cards re-entering via fadeUp looks better.
+    if ((document as any).startViewTransition && !skipNextViewTransition) {
         (document as any).startViewTransition(() => renderRecipes(recipes));
     } else {
+        skipNextViewTransition = false;
         renderRecipes(recipes);
     }
 }
@@ -1401,7 +1435,7 @@ function renderRecipes(recipes: Recipe[]) {
         placeholder.id = safeId;
         placeholder.className = "card recipe-card skeleton in-view";
         (placeholder.style as any).viewTransitionName = `placeholder-view-${index}`;
-        placeholder.innerHTML = buildPlaceholderHtml(data.title, data.status);
+        placeholder.innerHTML = buildPlaceholderHtml(data.title, data.status, currentViewMode, url);
         grid.appendChild(placeholder);
     });
 
