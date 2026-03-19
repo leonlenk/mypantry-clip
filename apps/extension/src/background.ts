@@ -4,6 +4,7 @@
 import { syncRecipeToCloud, deleteRecipeFromCloud, syncAllFromCloud, getCloudLatestTimestamp } from "./utils/sync";
 import { saveRecipeLocally, getRecipe, getAllRecipes } from "./utils/db";
 import { refreshSupabaseToken } from "./utils/authUtils";
+import { getLocal, setLocal } from "./utils/storage";
 import {
     normalizeUrl,
     getActiveExtractions,
@@ -13,9 +14,7 @@ import {
 import { setupOffscreenDocument } from "./background/offscreen";
 import { executeExtractionInBackground } from "./background/extractionJob";
 import { executeSubstitutionInBackground } from "./background/substitutionJob";
-
-// Temporary in-memory cache for the decrypted BYOK API key (1 hour expiration)
-let cachedDecryptedApiKey: { key: string; expiresAt: number } | null = null;
+import { MSG } from "./utils/messages";
 
 // ─── Lifecycle ────────────────────────────────────────────────────────────────
 
@@ -44,16 +43,16 @@ chrome.tabs.onUpdated.addListener(async (tabId: number, changeInfo: any, tab: an
 
 chrome.runtime.onMessage.addListener((message: any, sender: any, sendResponse: any) => {
     // Auth: content script on mypantry.dev/api/auth/callback forwards the session
-    if (message.type === "AUTH_SESSION_CAPTURED") {
+    if (message.type === MSG.authSessionCaptured) {
         (async () => {
             const { accessToken, refreshToken } = message;
-            await chrome.storage.local.set({
+            await setLocal({
                 supabaseToken: accessToken,
                 supabaseRefreshToken: refreshToken ?? null,
             });
             if (sender.tab?.id != null) chrome.tabs.remove(sender.tab.id);
             try {
-                await chrome.runtime.sendMessage({ type: "AUTH_COMPLETE" });
+                await chrome.runtime.sendMessage({ type: MSG.authComplete });
             } catch {
                 // Setup page already closed — not an error
             }
@@ -62,7 +61,7 @@ chrome.runtime.onMessage.addListener((message: any, sender: any, sendResponse: a
         return true;
     }
 
-    if (message.type === "GENERATE_EMBEDDING") {
+    if (message.type === MSG.generateEmbedding) {
         (async () => {
             try {
                 await setupOffscreenDocument();
@@ -79,7 +78,7 @@ chrome.runtime.onMessage.addListener((message: any, sender: any, sendResponse: a
         return true;
     }
 
-    if (message.type === "START_EXTRACTION") {
+    if (message.type === MSG.startExtraction) {
         const { tabId, url, apiKey, llmModel, llmProvider, authMode } = message;
         const normUrl = normalizeUrl(url);
         (async () => {
@@ -92,7 +91,7 @@ chrome.runtime.onMessage.addListener((message: any, sender: any, sendResponse: a
         return true;
     }
 
-    if (message.type === "GET_EXTRACTION_STATUS") {
+    if (message.type === MSG.getExtractionStatus) {
         const normUrl = normalizeUrl(message.url);
         (async () => {
             const map = await getActiveExtractions();
@@ -102,7 +101,7 @@ chrome.runtime.onMessage.addListener((message: any, sender: any, sendResponse: a
         return true;
     }
 
-    if (message.type === "GET_ALL_EXTRACTIONS") {
+    if (message.type === MSG.getAllExtractions) {
         (async () => {
             const map = await getActiveExtractions();
             sendResponse({ extractions: map });
@@ -110,7 +109,7 @@ chrome.runtime.onMessage.addListener((message: any, sender: any, sendResponse: a
         return true;
     }
 
-    if (message.type === "CANCEL_EXTRACTION") {
+    if (message.type === MSG.cancelExtraction) {
         const normUrl = normalizeUrl(message.url);
         (async () => {
             await markCancelled(normUrl);
@@ -122,14 +121,14 @@ chrome.runtime.onMessage.addListener((message: any, sender: any, sendResponse: a
         return true;
     }
 
-    if (message.type === "ASK_SUBSTITUTION") {
+    if (message.type === MSG.askSubstitution) {
         const { tabId, recipeData, userPrompt, apiKey, llmModel, llmProvider, authMode } = message;
         executeSubstitutionInBackground(tabId, recipeData, userPrompt, apiKey, llmModel, llmProvider, authMode);
         sendResponse({ success: true });
         return true;
     }
 
-    if (message.type === "PUSH_ALL_LOCAL_TO_CLOUD") {
+    if (message.type === MSG.pushAllLocalToCloud) {
         (async () => {
             try {
                 const localRecipes = await getAllRecipes();
@@ -150,7 +149,7 @@ chrome.runtime.onMessage.addListener((message: any, sender: any, sendResponse: a
         return true;
     }
 
-    if (message.type === "GET_CLOUD_LATEST") {
+    if (message.type === MSG.getCloudLatest) {
         (async () => {
             try {
                 const latest = await getCloudLatestTimestamp();
@@ -162,7 +161,7 @@ chrome.runtime.onMessage.addListener((message: any, sender: any, sendResponse: a
         return true;
     }
 
-    if (message.type === "SYNC_FROM_CLOUD") {
+    if (message.type === MSG.syncFromCloud) {
         (async () => {
             try {
                 const since = message.since as string | undefined;
@@ -178,7 +177,7 @@ chrome.runtime.onMessage.addListener((message: any, sender: any, sendResponse: a
                     }
                 }
                 const syncedAt = new Date().toISOString();
-                await chrome.storage.local.set({ lastSyncAt: syncedAt });
+                await setLocal({ lastSyncAt: syncedAt });
                 sendResponse({ success: true, merged: mergedCount, total: cloudRecipes.length, syncedAt });
             } catch (err: any) {
                 console.warn("[Sync] Manual sync failed:", err);
@@ -188,17 +187,17 @@ chrome.runtime.onMessage.addListener((message: any, sender: any, sendResponse: a
         return true;
     }
 
-    if (message.type === "SHARE_RECIPE") {
+    if (message.type === MSG.shareRecipe) {
         (async () => {
             try {
-                const stored = await chrome.storage.local.get(["supabaseToken", "llmProvider", "apiUrl"]);
+                const stored = await getLocal(["supabaseToken", "llmProvider", "apiUrl"]);
                 if (stored.llmProvider !== "google" || !stored.supabaseToken) {
                     sendResponse({ success: false, error: "not_authenticated" });
                     return;
                 }
                 const freshToken = await refreshSupabaseToken();
-                const token = freshToken ?? (stored.supabaseToken as string);
-                const apiBase: string = (stored.apiUrl as string | undefined) ?? "http://127.0.0.1:8000";
+                const token = freshToken ?? stored.supabaseToken;
+                const apiBase = stored.apiUrl ?? "http://127.0.0.1:8000";
                 const res = await fetch(`${apiBase}/share`, {
                     method: "POST",
                     headers: {
@@ -223,7 +222,7 @@ chrome.runtime.onMessage.addListener((message: any, sender: any, sendResponse: a
         return true;
     }
 
-    if (message.type === "IMPORT_SHARED_RECIPE") {
+    if (message.type === MSG.importSharedRecipe) {
         (async () => {
             try {
                 const recipes: any[] = message.recipes ?? (message.recipe ? [message.recipe] : []);
@@ -242,7 +241,7 @@ chrome.runtime.onMessage.addListener((message: any, sender: any, sendResponse: a
 
                     const embeddingResult: { success: boolean; embedding?: number[]; error?: string } =
                         await chrome.runtime.sendMessage({
-                            type: "GENERATE_EMBEDDING",
+                            type: MSG.generateEmbedding,
                             target: "offscreen",
                             text: textToEmbed,
                         });
@@ -257,7 +256,7 @@ chrome.runtime.onMessage.addListener((message: any, sender: any, sendResponse: a
                     await syncRecipeToCloud(recipe);
                 }
 
-                chrome.runtime.sendMessage({ type: "RECIPE_SAVED_FROM_SHARE" }).catch(() => {});
+                chrome.runtime.sendMessage({ type: MSG.recipeSavedFromShare }).catch(() => {});
                 sendResponse({ success: true });
             } catch (err: any) {
                 console.warn("[Import] Failed to import shared recipe:", err?.message ?? err);
@@ -267,25 +266,4 @@ chrome.runtime.onMessage.addListener((message: any, sender: any, sendResponse: a
         return true;
     }
 
-    if (message.type === "CACHE_API_KEY") {
-        cachedDecryptedApiKey = { key: message.apiKey, expiresAt: Date.now() + 60 * 60 * 1000 };
-        sendResponse({ success: true });
-        return false;
-    }
-
-    if (message.type === "GET_CACHED_API_KEY") {
-        if (cachedDecryptedApiKey && Date.now() < cachedDecryptedApiKey.expiresAt) {
-            sendResponse({ apiKey: cachedDecryptedApiKey.key });
-        } else {
-            cachedDecryptedApiKey = null;
-            sendResponse({ apiKey: null });
-        }
-        return false;
-    }
-
-    if (message.type === "CLEAR_CACHED_API_KEY") {
-        cachedDecryptedApiKey = null;
-        sendResponse({ success: true });
-        return false;
-    }
 });

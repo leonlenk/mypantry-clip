@@ -1,4 +1,6 @@
 import { initializeByokForm } from "./byok";
+import { getLocal, setLocal } from "./storage";
+import { MSG } from "./messages";
 
 // Elements
 const stepIdentity  = document.getElementById("step-identity");
@@ -67,7 +69,7 @@ btnOauth?.addEventListener("click", async () => {
 
     setOauthLoading(true);
 
-    await chrome.storage.local.set({
+    await setLocal({
         identityMode: "google",
         supabaseUrl,
         supabaseAnonKey,
@@ -83,7 +85,7 @@ btnOauth?.addEventListener("click", async () => {
 
 // Anonymous path — go directly to BYOK form
 btnContinueAnonymous?.addEventListener("click", async () => {
-    await chrome.storage.local.set({
+    await setLocal({
         identityMode: "anonymous",
         apiUrl: import.meta.env.PUBLIC_API_URL ?? "http://127.0.0.1:8000",
     });
@@ -94,7 +96,7 @@ btnContinueAnonymous?.addEventListener("click", async () => {
 // ─── STEP 2: API choice (Google users only) ───────────────────────────────────
 
 btnChooseCloud?.addEventListener("click", async () => {
-    await chrome.storage.local.set({
+    await setLocal({
         apiMode: "cloud",
         llmProvider: "google",
         llmModel: "gemini-2.5-flash",
@@ -122,7 +124,7 @@ chrome.runtime.onMessage.addListener((msg) => {
         (async () => {
             // Mark setup complete now so the popup doesn't redirect to setup on next open.
             // The user still needs to pick their API mode on step-api-choice.
-            await chrome.storage.local.set({ setupComplete: true });
+            await setLocal({ setupComplete: true });
             showState(stepApiChoice);
         })();
     }
@@ -137,7 +139,7 @@ chrome.runtime.onMessage.addListener((msg) => {
  * For BYOK or anonymous users: goes straight to the ready screen.
  */
 async function doPostModelSync() {
-    const { apiMode } = await chrome.storage.local.get("apiMode");
+    const { apiMode } = await getLocal(["apiMode"]);
 
     if (apiMode !== "cloud") {
         // BYOK or anonymous — no cloud to sync, go straight to ready
@@ -146,7 +148,7 @@ async function doPostModelSync() {
     }
 
     // Check if the user already has cloud recipes (avoid redundant full syncs on relog)
-    const { lastSyncAt } = await chrome.storage.local.get("lastSyncAt");
+    const { lastSyncAt } = await getLocal(["lastSyncAt"]);
     if (lastSyncAt) {
         showState(stepReady);
         return;
@@ -159,13 +161,13 @@ async function doPostModelSync() {
 
     try {
         const pullResult: { success: boolean; merged: number; total: number } =
-            await chrome.runtime.sendMessage({ type: "SYNC_FROM_CLOUD", since: undefined });
+            await chrome.runtime.sendMessage({ type: MSG.syncFromCloud, since: undefined });
 
         if (syncBar) syncBar.style.width = "50%";
         if (syncText) syncText.textContent = "Syncing your library...";
 
         const pushResult: { success: boolean; pushed: number; total: number } =
-            await chrome.runtime.sendMessage({ type: "PUSH_ALL_LOCAL_TO_CLOUD" });
+            await chrome.runtime.sendMessage({ type: MSG.pushAllLocalToCloud });
 
         if (syncBar) syncBar.style.width = "100%";
 

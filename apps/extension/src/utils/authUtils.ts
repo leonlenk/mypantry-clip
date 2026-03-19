@@ -5,16 +5,13 @@
  * - refreshSupabaseToken: silently refreshes the access token via the refresh token
  */
 
-declare const chrome: any;
+import { getLocal, setLocal } from "./storage";
 
-/**
- * Parses a JWT payload and checks if it is expired or within `bufferMinutes` of expiring.
- */
-export function isTokenExpired(token: string, bufferMinutes: number = 5): boolean {
+/** Decodes the payload of a JWT and returns it as a plain object, or null on failure. */
+export function parseJwt(token: string): Record<string, any> | null {
     try {
         const payloadBase64Url = token.split(".")[1];
-        if (!payloadBase64Url) return true;
-
+        if (!payloadBase64Url) return null;
         const payloadBase64 = payloadBase64Url.replace(/-/g, "+").replace(/_/g, "/");
         const jsonPayload = decodeURIComponent(
             atob(payloadBase64)
@@ -22,17 +19,18 @@ export function isTokenExpired(token: string, bufferMinutes: number = 5): boolea
                 .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
                 .join("")
         );
-
-        const decoded = JSON.parse(jsonPayload);
-        if (!decoded.exp) return true;
-
-        const expiresAt = decoded.exp * 1000;
-        const bufferMs = bufferMinutes * 60 * 1000;
-        return Date.now() >= expiresAt - bufferMs;
-    } catch (e) {
-        console.warn("[Auth] Failed to decode JWT to check expiry", e);
-        return true;
+        return JSON.parse(jsonPayload);
+    } catch {
+        return null;
     }
+}
+
+/** Returns true if the JWT is missing, malformed, or within `bufferMinutes` of expiring. */
+export function isTokenExpired(token: string, bufferMinutes: number = 5): boolean {
+    const decoded = parseJwt(token);
+    if (!decoded?.exp) return true;
+    const bufferMs = bufferMinutes * 60 * 1000;
+    return Date.now() >= decoded.exp * 1000 - bufferMs;
 }
 
 /**
@@ -41,15 +39,10 @@ export function isTokenExpired(token: string, bufferMinutes: number = 5): boolea
  * Returns the fresh access token, or null if refresh fails.
  */
 export async function refreshSupabaseToken(): Promise<string | null> {
-    const stored = await chrome.storage.local.get([
-        "supabaseRefreshToken",
-        "supabaseToken",
-        "supabaseUrl",
-        "supabaseAnonKey",
-    ]);
+    const stored = await getLocal(["supabaseRefreshToken", "supabaseToken", "supabaseUrl", "supabaseAnonKey"]);
 
-    const supabaseUrl = stored.supabaseUrl as string;
-    const supabaseAnonKey = stored.supabaseAnonKey as string;
+    const supabaseUrl = stored.supabaseUrl;
+    const supabaseAnonKey = stored.supabaseAnonKey;
     const refreshToken = stored.supabaseRefreshToken as string | undefined;
     const currentToken = stored.supabaseToken as string | undefined;
 
@@ -90,7 +83,7 @@ export async function refreshSupabaseToken(): Promise<string | null> {
         const newRefreshToken: string = data.refresh_token;
 
         if (newAccessToken) {
-            await chrome.storage.local.set({
+            await setLocal({
                 supabaseToken: newAccessToken,
                 supabaseRefreshToken: newRefreshToken ?? refreshToken,
             });

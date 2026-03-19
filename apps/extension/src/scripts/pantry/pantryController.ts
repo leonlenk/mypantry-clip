@@ -19,6 +19,8 @@
  */
 
 import { pantryState, VIEW_MODE_KEY, UNIT_PREFERENCE_KEY } from "./pantryState";
+import { getLocal, LS } from "../../utils/storage";
+import { MSG } from "../../utils/messages";
 import { loadRecipes } from "./recipeRenderer";
 import { wireSearchHandlers } from "./searchManager";
 import { wireSelectionControls } from "./selectionManager";
@@ -31,10 +33,7 @@ declare const chrome: any;
 document.addEventListener("DOMContentLoaded", async () => {
     // ── Setup guard ────────────────────────────────────────────────────────────
     if (typeof chrome !== "undefined" && chrome.storage?.local) {
-        const { setupComplete, llmProvider } = await chrome.storage.local.get([
-            "setupComplete",
-            "llmProvider",
-        ]);
+        const { setupComplete, llmProvider } = await getLocal(["setupComplete", "llmProvider"]);
 
         if (!setupComplete) {
             window.location.href = "setup.html";
@@ -45,11 +44,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (llmProvider === "google") {
             (async () => {
                 try {
-                    const stored = await chrome.storage.local.get("lastSyncAt");
-                    const lastSyncAt = stored.lastSyncAt as string | undefined;
+                    const stored = await getLocal(["lastSyncAt"]);
+                    const lastSyncAt = stored.lastSyncAt;
 
                     const latestRes: { success: boolean; latest_updated_at: string | null } =
-                        await chrome.runtime.sendMessage({ type: "GET_CLOUD_LATEST" });
+                        await chrome.runtime.sendMessage({ type: MSG.getCloudLatest });
 
                     if (!latestRes.success || !latestRes.latest_updated_at) return;
 
@@ -59,7 +58,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                     console.log("[Pantry] Cloud is ahead of local — fetching delta...");
 
                     const syncRes: { success: boolean; merged: number } =
-                        await chrome.runtime.sendMessage({ type: "SYNC_FROM_CLOUD", since: lastSyncAt });
+                        await chrome.runtime.sendMessage({ type: MSG.syncFromCloud, since: lastSyncAt });
 
                     if (syncRes.success && syncRes.merged > 0) {
                         console.log(`[Pantry] Silently merged ${syncRes.merged} new recipe(s) from cloud.`);
@@ -89,7 +88,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             filterLinks.forEach((l) => l.classList.remove("active"));
             (e.currentTarget as HTMLElement).classList.add("active");
             pantryState.currentFilter = (e.currentTarget as HTMLElement).dataset.filter || "all";
-            localStorage.setItem("pantryFilter", pantryState.currentFilter);
+            localStorage.setItem(LS.pantryFilter, pantryState.currentFilter);
             await loadRecipes();
         });
     });
@@ -136,7 +135,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     // ── Restore in-flight extractions across page refreshes ───────────────────
     if (typeof chrome !== "undefined" && chrome.runtime?.sendMessage) {
         try {
-            const activeRes = await chrome.runtime.sendMessage({ type: "GET_ALL_EXTRACTIONS" });
+            const activeRes = await chrome.runtime.sendMessage({ type: MSG.getAllExtractions });
             if (activeRes?.extractions) {
                 for (const [url, data] of Object.entries(activeRes.extractions as Record<string, any>)) {
                     let displayTitle = data.title;

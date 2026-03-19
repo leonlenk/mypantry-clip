@@ -5,6 +5,8 @@
 import feather from "feather-icons";
 import { getAllRecipes, searchRecipes } from "../../utils/db";
 import { pantryState } from "./pantryState";
+import { LS } from "../../utils/storage";
+import { MSG } from "../../utils/messages";
 import { renderSearchBadges } from "./tagFilter";
 import { loadRecipes, renderRecipes } from "./recipeRenderer";
 import { setCardSelectedState, syncSelectionModeClass, updateSelectionUI } from "./selectionManager";
@@ -73,7 +75,7 @@ function hideSuggestions() {
 function selectSuggestion(tag: string) {
     if (!pantryState.currentTagFilters.includes(tag)) {
         pantryState.currentTagFilters.unshift(tag);
-        localStorage.setItem("pantryTagFilters", JSON.stringify(pantryState.currentTagFilters));
+        localStorage.setItem(LS.pantryTagFilters, JSON.stringify(pantryState.currentTagFilters));
         renderSearchBadges();
     }
     searchInput.value = "";
@@ -130,7 +132,7 @@ export async function handleSearch() {
 
         // Step 2: vector similarity search
         const embeddingResult: { success: boolean; embedding?: number[]; error?: string } =
-            await chrome.runtime.sendMessage({ type: "GENERATE_EMBEDDING", text: query });
+            await chrome.runtime.sendMessage({ type: MSG.generateEmbedding, text: query });
 
         let merged: typeof all;
         if (embeddingResult.success && embeddingResult.embedding) {
@@ -225,7 +227,7 @@ export function wireSearchHandlers() {
             if (e.key === "Backspace" || e.key === "Delete" || isPrintableKey || isCutOrPaste) {
                 if (pantryState.currentTagFilters.length > 0) {
                     pantryState.currentTagFilters = [];
-                    localStorage.setItem("pantryTagFilters", JSON.stringify(pantryState.currentTagFilters));
+                    localStorage.setItem(LS.pantryTagFilters, JSON.stringify(pantryState.currentTagFilters));
                     renderSearchBadges();
                 }
                 searchBadgesContainer.classList.remove("chips-selected");
@@ -279,7 +281,7 @@ export function wireSearchHandlers() {
             const text = searchInput.value.trim().toUpperCase();
             if (pantryState.allKnownTags.has(text) && !pantryState.currentTagFilters.includes(text)) {
                 pantryState.currentTagFilters.unshift(text);
-                localStorage.setItem("pantryTagFilters", JSON.stringify(pantryState.currentTagFilters));
+                localStorage.setItem(LS.pantryTagFilters, JSON.stringify(pantryState.currentTagFilters));
                 searchInput.value = "";
                 renderSearchBadges();
                 hideSuggestions();
@@ -293,7 +295,7 @@ export function wireSearchHandlers() {
 
         if (e.key === "Backspace" && searchInput.value === "" && pantryState.currentTagFilters.length > 0) {
             pantryState.currentTagFilters.shift();
-            localStorage.setItem("pantryTagFilters", JSON.stringify(pantryState.currentTagFilters));
+            localStorage.setItem(LS.pantryTagFilters, JSON.stringify(pantryState.currentTagFilters));
             renderSearchBadges();
             hideSuggestions();
             handleSearch();
@@ -309,7 +311,7 @@ export function wireSearchHandlers() {
         if (searchInput) {
             searchInput.value = "";
             pantryState.currentTagFilters = [];
-            localStorage.setItem("pantryTagFilters", JSON.stringify(pantryState.currentTagFilters));
+            localStorage.setItem(LS.pantryTagFilters, JSON.stringify(pantryState.currentTagFilters));
             renderSearchBadges();
             clearBtn.classList.remove("show");
             hideSuggestions();
@@ -325,7 +327,7 @@ export function wireSearchHandlers() {
         if (delimiterMatch && term) {
             if (pantryState.allKnownTags.has(term) && !pantryState.currentTagFilters.includes(term)) {
                 pantryState.currentTagFilters.unshift(term);
-                localStorage.setItem("pantryTagFilters", JSON.stringify(pantryState.currentTagFilters));
+                localStorage.setItem(LS.pantryTagFilters, JSON.stringify(pantryState.currentTagFilters));
                 searchInput.value = "";
                 renderSearchBadges();
                 hideSuggestions();

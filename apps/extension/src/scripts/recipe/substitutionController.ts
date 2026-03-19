@@ -14,6 +14,8 @@
 import { saveRecipeLocally } from "../../utils/db";
 import { renderIngredients } from "./ingredientsRenderer";
 import { recipeState } from "./recipeState";
+import { getLocal } from "../../utils/storage";
+import { MSG } from "../../utils/messages";
 
 declare const chrome: any;
 
@@ -69,49 +71,33 @@ subSendBtn?.addEventListener("click", async () => {
     subResultArea?.classList.add("hidden");
     if (subStatusText) subStatusText.textContent = "Starting AI substitution analysis...";
 
-    chrome.storage.local.get(
-        [
-            "plaintextApiKey",
-            "supabaseToken",
-            "llmModel",
-            "llmProvider",
-            "apiMode",
-        ],
-        async (res: {
-            plaintextApiKey?: string;
-            supabaseToken?: string;
-            llmModel?: string;
-            llmProvider?: string;
-            apiMode?: string;
-        }) => {
-            const { plaintextApiKey, supabaseToken, llmModel, llmProvider, apiMode } = res;
-            const provider = llmProvider || "anthropic";
+    const { plaintextApiKey, supabaseToken, llmModel, llmProvider, apiMode } =
+        await getLocal(["plaintextApiKey", "supabaseToken", "llmModel", "llmProvider", "apiMode"]);
+    const provider = llmProvider || "anthropic";
 
-            const resolvedApiMode = apiMode ?? (supabaseToken ? "cloud" : "byok");
-            const apiKey = resolvedApiMode === "cloud" ? supabaseToken : plaintextApiKey;
-            const authMode = resolvedApiMode === "cloud" ? "cloud" : "byok";
+    const resolvedApiMode = apiMode ?? (supabaseToken ? "cloud" : "byok");
+    const apiKey = resolvedApiMode === "cloud" ? supabaseToken : plaintextApiKey;
+    const authMode = resolvedApiMode === "cloud" ? "cloud" : "byok";
 
-            if (!apiKey) {
-                if (subStatusText)
-                    subStatusText.textContent = `Error: No API key configured. Please add one in API Settings.`;
-                return;
-            }
+    if (!apiKey) {
+        if (subStatusText)
+            subStatusText.textContent = `Error: No API key configured. Please add one in API Settings.`;
+        return;
+    }
 
-            chrome.tabs.query({ active: true, currentWindow: true }, (tabs: any[]) => {
-                const tabId = tabs[0]?.id;
-                chrome.runtime.sendMessage({
-                    type: "ASK_SUBSTITUTION",
-                    tabId,
-                    recipeData: recipe,
-                    userPrompt: prompt,
-                    apiKey,
-                    llmModel: llmModel || "claude-3-5-sonnet-20241022",
-                    llmProvider: provider,
-                    authMode,
-                });
-            });
-        }
-    );
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs: any[]) => {
+        const tabId = tabs[0]?.id;
+        chrome.runtime.sendMessage({
+            type: MSG.askSubstitution,
+            tabId,
+            recipeData: recipe,
+            userPrompt: prompt,
+            apiKey,
+            llmModel: llmModel || "claude-3-5-sonnet-20241022",
+            llmProvider: provider,
+            authMode,
+        });
+    });
 });
 
 subInput?.addEventListener("keydown", (e) => {
@@ -121,7 +107,7 @@ subInput?.addEventListener("keydown", (e) => {
 // ─── Message listener ─────────────────────────────────────────────────────────
 
 chrome.runtime.onMessage.addListener((message: any) => {
-    if (message.type !== "SUBSTITUTION_STATUS_UPDATE") return;
+    if (message.type !== MSG.substitutionStatusUpdate) return;
 
     subStatusArea?.classList.remove("hidden");
     if (subStatusText) subStatusText.textContent = message.status;

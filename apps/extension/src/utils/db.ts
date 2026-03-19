@@ -1,5 +1,6 @@
 import type { Recipe } from "../types/recipe";
 import { syncRecipeToCloud, deleteRecipeFromCloud, syncBatchToCloud } from "./sync";
+import { getLocal, setLocal } from "./storage";
 import { create, insertMultiple, search } from "@orama/orama";
 
 let oramaDb: any = null;
@@ -63,11 +64,11 @@ export async function saveRecipeLocally(recipe: Recipe): Promise<void> {
 
     if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local && recipe.url) {
         try {
-            const data: Record<string, any> = await chrome.storage.local.get("savedUrls");
-            const urls: string[] = Array.isArray(data.savedUrls) ? data.savedUrls : [];
+            const data = await getLocal(["savedUrls"]);
+            const urls: string[] = data.savedUrls ?? [];
             if (!urls.includes(recipe.url)) {
                 urls.push(recipe.url);
-                await chrome.storage.local.set({ savedUrls: urls });
+                await setLocal({ savedUrls: urls });
             }
         } catch (e) {
             console.warn("Failed to update savedUrls cache", e);
@@ -110,14 +111,10 @@ export async function importRecipesLocally(recipes: Recipe[]): Promise<void> {
 
     if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
         try {
-            const data: Record<string, any> = await chrome.storage.local.get("savedUrls");
-            const urls: Set<string> = new Set(Array.isArray(data.savedUrls) ? data.savedUrls : []);
-
-            recipes.forEach(r => {
-                if (r.url) urls.add(r.url);
-            });
-
-            await chrome.storage.local.set({ savedUrls: Array.from(urls) });
+            const data = await getLocal(["savedUrls"]);
+            const urls: Set<string> = new Set(data.savedUrls ?? []);
+            recipes.forEach(r => { if (r.url) urls.add(r.url); });
+            await setLocal({ savedUrls: Array.from(urls) });
         } catch (e) {
             console.warn("Failed to update savedUrls cache during batch import", e);
         }
@@ -183,10 +180,9 @@ export async function deleteRecipe(id: string): Promise<void> {
 
     if (recipe && recipe.url && typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
         try {
-            const data: Record<string, any> = await chrome.storage.local.get("savedUrls");
-            let urls: string[] = Array.isArray(data.savedUrls) ? data.savedUrls : [];
-            urls = urls.filter(u => u !== recipe.url);
-            await chrome.storage.local.set({ savedUrls: urls });
+            const data = await getLocal(["savedUrls"]);
+            const urls = (data.savedUrls ?? []).filter(u => u !== recipe.url);
+            await setLocal({ savedUrls: urls });
         } catch (e) {
             console.warn("Failed to clear savedUrls cache", e);
         }

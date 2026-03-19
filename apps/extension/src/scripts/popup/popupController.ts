@@ -9,6 +9,9 @@
  */
 
 import { initializeByokForm, loadByokSettings } from "../../utils/byok";
+import { getLocal, setLocal, removeLocal, AUTH_KEYS } from "../../utils/storage";
+import { MSG } from "../../utils/messages";
+import { parseJwt } from "../../utils/authUtils";
 
 declare const chrome: any;
 
@@ -46,26 +49,6 @@ function getValidStoredKey(value: unknown): string | undefined {
     // Encrypted ciphertext would be base64 and far longer than any real API key
     if (value.length === 0 || value.length > 300) return undefined;
     return value;
-}
-
-// ─── JWT helpers ─────────────────────────────────────────────────────────────
-
-function parseJwt(token: string) {
-    try {
-        const base64Url = token.split(".")[1];
-        if (!base64Url) return null;
-        const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-        const jsonPayload = decodeURIComponent(
-            atob(base64)
-                .split("")
-                .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-                .join("")
-        );
-        return JSON.parse(jsonPayload);
-    } catch (e) {
-        console.warn("Failed to parse JWT", e);
-        return null;
-    }
 }
 
 // ─── Status messages ─────────────────────────────────────────────────────────
@@ -111,7 +94,7 @@ async function executeExtraction(apiKey: string, llmModel: string, llmProvider: 
 
     console.log(`[MyPantry] Triggering background extraction for tab: ${tab.url}`);
     chrome.runtime.sendMessage({
-        type: "START_EXTRACTION",
+        type: MSG.startExtraction,
         tabId: tab.id,
         url: tab.url,
         apiKey,
@@ -123,20 +106,8 @@ async function executeExtraction(apiKey: string, llmModel: string, llmProvider: 
 
 // ─── Clearance helper ─────────────────────────────────────────────────────────
 
-const AUTH_KEYS = [
-    "setupComplete",
-    "plaintextApiKey",
-    "supabaseToken",
-    "supabaseRefreshToken",
-    "llmProvider",
-    "llmModel",
-    "identityMode",
-    "apiMode",
-];
-
 async function clearAuthAndClose() {
-    await chrome.storage.local.remove(AUTH_KEYS);
-    chrome.runtime.sendMessage({ type: "CLEAR_CACHED_API_KEY" });
+    await removeLocal(AUTH_KEYS);
     window.close();
 }
 
@@ -145,20 +116,13 @@ async function clearAuthAndClose() {
 document.addEventListener("DOMContentLoaded", async () => {
     try {
         if (typeof chrome !== "undefined" && chrome.storage) {
-            const data = await chrome.storage.local.get([
-                "setupComplete",
-                "plaintextApiKey",
-                "supabaseToken",
-                "identityMode",
-                "apiMode",
-            ]);
+            const data = await getLocal(["setupComplete", "plaintextApiKey", "supabaseToken", "identityMode", "apiMode"]);
 
             // Sanitize: if the stored key is not a valid plain string (old encrypted format),
             // clear it so the user is prompted to re-enter rather than getting silent 401s.
             const validKey = getValidStoredKey(data.plaintextApiKey);
             if (data.plaintextApiKey && !validKey) {
-                await chrome.storage.local.remove(["plaintextApiKey"]);
-                chrome.runtime.sendMessage({ type: "CLEAR_CACHED_API_KEY" });
+                await removeLocal(["plaintextApiKey"]);
             }
 
             const hasAuth =
@@ -174,7 +138,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
             const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
             if (supabaseUrl && supabaseAnonKey) {
-                chrome.storage.local.set({ supabaseUrl, supabaseAnonKey });
+                setLocal({ supabaseUrl, supabaseAnonKey });
             }
 
             // Backward compat: derive identityMode from token presence if not stored
@@ -221,7 +185,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
             if (tab?.id) {
                 const response = await chrome.runtime.sendMessage({
-                    type: "GET_EXTRACTION_STATUS",
+                    type: MSG.getExtractionStatus,
                     url: tab.url,
                 });
                 if (response?.isActive) {
@@ -239,8 +203,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (typeof chrome !== "undefined" && chrome.tabs && chrome.storage?.local) {
             const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
             if (tab?.url) {
-                const data = await chrome.storage.local.get("savedUrls");
-                const urls: string[] = Array.isArray(data.savedUrls) ? data.savedUrls : [];
+                const data = await getLocal(["savedUrls"]);
+                const urls = data.savedUrls ?? [];
                 const normTabUrl = tab.url.replace(/\/$/, "");
                 if (urls.some((u) => u.replace(/\/$/, "") === normTabUrl)) {
                     if (extractBtn) {
@@ -298,11 +262,11 @@ switchApiModeBtn?.addEventListener("click", async () => {
     profileDropdownMenu?.classList.add("hidden");
 
     if (typeof chrome !== "undefined" && chrome.storage) {
-        const { apiMode } = await chrome.storage.local.get("apiMode");
+        const { apiMode } = await getLocal(["apiMode"]);
         const currentMode: "cloud" | "byok" = apiMode ?? "cloud";
         const newMode: "cloud" | "byok" = currentMode === "cloud" ? "byok" : "cloud";
 
-        await chrome.storage.local.set({ apiMode: newMode });
+        await setLocal({ apiMode: newMode });
 
         if (switchApiModeBtn) {
             switchApiModeBtn.textContent = newMode === "cloud" ? "Switch to BYOK" : "Switch to Cloud";
@@ -312,8 +276,7 @@ switchApiModeBtn?.addEventListener("click", async () => {
 
 switchAccountBtn?.addEventListener("click", async () => {
     if (typeof chrome !== "undefined" && chrome.storage) {
-        await chrome.storage.local.remove(AUTH_KEYS);
-        chrome.runtime.sendMessage({ type: "CLEAR_CACHED_API_KEY" });
+        await removeLocal(AUTH_KEYS);
         const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
         if (supabaseUrl && chrome.tabs) {
             const redirectTo = "https://mypantry.dev/api/auth/callback";
@@ -360,9 +323,7 @@ apiSettingsBtn?.addEventListener("click", async () => {
 
     if (!actionCard || !settingsPanel) return;
 
-    const storageResult = (await chrome.storage.local.get(["plaintextApiKey"])) as {
-        plaintextApiKey?: string;
-    };
+    const storageResult = await getLocal(["plaintextApiKey"]);
 
     actionCard.classList.add("hidden");
     settingsPanel.classList.remove("hidden");
@@ -385,13 +346,7 @@ extractBtn?.addEventListener("click", async () => {
     }
 
     try {
-        const storageResult: Record<string, any> = await chrome.storage.local.get([
-            "plaintextApiKey",
-            "supabaseToken",
-            "llmModel",
-            "llmProvider",
-            "apiMode",
-        ]);
+        const storageResult = await getLocal(["plaintextApiKey", "supabaseToken", "llmModel", "llmProvider", "apiMode"]);
 
         // Backward compat: derive apiMode from token presence if not stored
         const apiMode: "cloud" | "byok" =
@@ -435,7 +390,7 @@ extractBtn?.addEventListener("click", async () => {
 // ─── Background status listener ───────────────────────────────────────────────
 
 chrome.runtime.onMessage.addListener((message: any) => {
-    if (message.type !== "EXTRACTION_STATUS_UPDATE") return;
+    if (message.type !== MSG.extractionStatusUpdate) return;
     const { status, isError, isComplete } = message;
     addStatusMessage(status, isError, isComplete);
 

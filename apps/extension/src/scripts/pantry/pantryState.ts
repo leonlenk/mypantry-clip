@@ -3,22 +3,25 @@
  * All pantry modules import from here to avoid duplicating state.
  */
 
-export const VIEW_MODE_KEY = "pantryViewMode";
-export const UNIT_PREFERENCE_KEY = "preferredUnitSystem";
+import { LS } from "../../utils/storage";
+
+// Re-export for pantry sub-modules that already import these names from here.
+export const VIEW_MODE_KEY = LS.pantryViewMode;
+export const UNIT_PREFERENCE_KEY = LS.preferredUnitSystem;
 
 function loadTagFilters(): string[] {
     try {
-        const stored = localStorage.getItem("pantryTagFilters");
+        const stored = localStorage.getItem(LS.pantryTagFilters);
         if (stored) return JSON.parse(stored);
-        const oldSingle = localStorage.getItem("pantryTagFilter");
+        const oldSingle = localStorage.getItem(LS.pantryTagFilter);
         if (oldSingle) return [oldSingle.toUpperCase()];
     } catch { /* ignore */ }
     return [];
 }
 
 export const pantryState = {
-    currentFilter: localStorage.getItem("pantryFilter") || "all",
-    currentViewMode: localStorage.getItem(VIEW_MODE_KEY) || "large",
+    currentFilter: localStorage.getItem(LS.pantryFilter) || "all",
+    currentViewMode: localStorage.getItem(LS.pantryViewMode) || "large",
     skipNextViewTransition: false,
     currentTagFilters: loadTagFilters(),
     allKnownTags: new Set<string>(),

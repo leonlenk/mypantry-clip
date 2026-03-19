@@ -7,6 +7,7 @@ import { getAllRecipes, importRecipesLocally } from "../../utils/db";
 import type { Recipe } from "../../types/recipe";
 import { loadRecipes } from "./recipeRenderer";
 import { showToast } from "./modals";
+import { MSG } from "../../utils/messages";
 
 declare const chrome: any;
 
@@ -68,7 +69,7 @@ export function wireImportExport() {
                     ].filter(Boolean).join(". ");
 
                     const embeddingResult = await chrome.runtime.sendMessage({
-                        type: "GENERATE_EMBEDDING",
+                        type: MSG.generateEmbedding,
                         text: embeddingText,
                     });
                     if (embeddingResult.success && embeddingResult.embedding) {

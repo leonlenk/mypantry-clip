@@ -8,6 +8,7 @@
 
 import { Readability } from "@mozilla/readability";
 import type { ExtractionResult } from "./utils/parser";
+import { MSG } from "./utils/messages";
 
 // ─── Auth Session Capture ─────────────────────────────────────────────────────
 // Only active on the mypantry.dev/api/auth/callback page. After a successful Google
@@ -35,7 +36,7 @@ if (window.location.hostname.includes('mypantry.dev') && window.location.pathnam
             if (accessToken) {
                 console.log('[PantryClip] Sending AUTH_SESSION_CAPTURED message to background...');
                 chrome.runtime.sendMessage({
-                    type: 'AUTH_SESSION_CAPTURED',
+                    type: MSG.authSessionCaptured,
                     accessToken,
                     refreshToken: refreshToken ?? null,
                 }, (response) => {
@@ -68,15 +69,15 @@ if (
 
     window.addEventListener('message', (event) => {
         if (event.origin !== 'https://mypantry.dev') return;
-        if (event.data?.type !== 'MYPANTRY_SAVE_RECIPE') return;
+        if (event.data?.type !== MSG.mypantrySaveRecipe) return;
 
         // Normalise: page JS sends { recipes: [...] }; support legacy { recipe: ... } too
         const recipes = event.data.recipes ?? (event.data.recipe ? [event.data.recipe] : []);
         chrome.runtime.sendMessage(
-            { type: 'IMPORT_SHARED_RECIPE', recipes },
+            { type: MSG.importSharedRecipe, recipes },
             (response) => {
                 window.postMessage(
-                    { type: 'MYPANTRY_SAVE_RESULT', success: response?.success ?? false },
+                    { type: MSG.mypantrySaveResult, success: response?.success ?? false },
                     'https://mypantry.dev'
                 );
             }
@@ -280,7 +281,7 @@ function extractWithReadability(): ExtractionResult {
 // ─── Message Listener ─────────────────────────────────────────────────────────
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-    if (message.type !== "EXTRACT_PAGE") return false;
+    if (message.type !== MSG.extractPage) return false;
 
     // Run the extraction cascade synchronously — all DOM access must happen
     // here in the content script's page context; results are sent back to

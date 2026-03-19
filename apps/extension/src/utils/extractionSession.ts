@@ -6,38 +6,38 @@
  * for "currently extracting" state.
  */
 
-declare const chrome: any;
+import { type ExtractionState, getSession, setSession } from "./storage";
+import { MSG } from "./messages";
 
-export interface ExtractionState {
-    status: string;
-    tabId: number;
-    title?: string;
-}
+// Re-export so existing callers don't need to change their import path.
+export type { ExtractionState };
+
+declare const chrome: any;
 
 export function normalizeUrl(url: string): string {
     return url.replace(/\/$/, "");
 }
 
 export async function getActiveExtractions(): Promise<Record<string, ExtractionState>> {
-    const stored = await chrome.storage.session.get("activeExtractions");
-    return (stored.activeExtractions as Record<string, ExtractionState>) ?? {};
+    const stored = await getSession(["activeExtractions"]);
+    return stored.activeExtractions ?? {};
 }
 
 export async function setActiveExtractions(map: Record<string, ExtractionState>): Promise<void> {
-    await chrome.storage.session.set({ activeExtractions: map });
+    await setSession({ activeExtractions: map });
 }
 
 export async function isCancelled(url: string): Promise<boolean> {
-    const stored = await chrome.storage.session.get("cancelledExtractions");
-    const list = (stored.cancelledExtractions as string[]) ?? [];
+    const stored = await getSession(["cancelledExtractions"]);
+    const list = stored.cancelledExtractions ?? [];
     return list.includes(url);
 }
 
 export async function markCancelled(url: string): Promise<void> {
-    const stored = await chrome.storage.session.get("cancelledExtractions");
-    const list = (stored.cancelledExtractions as string[]) ?? [];
+    const stored = await getSession(["cancelledExtractions"]);
+    const list = stored.cancelledExtractions ?? [];
     if (!list.includes(url)) list.push(url);
-    await chrome.storage.session.set({ cancelledExtractions: list });
+    await setSession({ cancelledExtractions: list });
 }
 
 export async function updateExtractionStatus(
@@ -68,7 +68,7 @@ export async function updateExtractionStatus(
 
     try {
         await chrome.runtime.sendMessage({
-            type: "EXTRACTION_STATUS_UPDATE",
+            type: MSG.extractionStatusUpdate,
             url: normUrl,
             status,
             isError,

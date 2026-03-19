@@ -8,6 +8,8 @@
 
 declare const chrome: any;
 
+import { getLocal } from "./storage";
+
 // ─── Extraction result type ───────────────────────────────────────────────────
 
 /**
@@ -28,8 +30,8 @@ export async function getApiBase(): Promise<string> {
     if (typeof chrome === "undefined" || !chrome.storage?.local) {
         return "http://127.0.0.1:8000";
     }
-    const data = await chrome.storage.local.get("apiUrl");
-    return (data.apiUrl as string | undefined) ?? "http://127.0.0.1:8000";
+    const data = await getLocal(["apiUrl"]);
+    return data.apiUrl ?? "http://127.0.0.1:8000";
 }
 
 // ─── BYOK request config ──────────────────────────────────────────────────────

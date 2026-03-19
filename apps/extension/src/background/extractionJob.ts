@@ -12,6 +12,7 @@ import { refreshSupabaseToken } from "../utils/authUtils";
 import { isCancelled, updateExtractionStatus } from "../utils/extractionSession";
 import { startKeepAlive, stopKeepAlive } from "./keepAlive";
 import { setupOffscreenDocument } from "./offscreen";
+import { MSG } from "../utils/messages";
 
 declare const chrome: any;
 
@@ -48,7 +49,7 @@ export async function executeExtractionInBackground(
             noListener?: boolean;
         }> =>
             new Promise((resolve) => {
-                chrome.tabs.sendMessage(tabId, { type: "EXTRACT_PAGE" }, (response: any) => {
+                chrome.tabs.sendMessage(tabId, { type: MSG.extractPage }, (response: any) => {
                     if (chrome.runtime.lastError) {
                         resolve({ result: null, noListener: true });
                         return;
@@ -131,7 +132,7 @@ export async function executeExtractionInBackground(
 
         const embeddingResult: { success: boolean; embedding?: number[]; error?: string } =
             await chrome.runtime.sendMessage({
-                type: "GENERATE_EMBEDDING",
+                type: MSG.generateEmbedding,
                 target: "offscreen",
                 text: textToEmbed,
             });

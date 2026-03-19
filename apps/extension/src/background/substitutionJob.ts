@@ -8,6 +8,7 @@
 import { askSubstitution } from "../utils/substitutionParser";
 import { refreshSupabaseToken } from "../utils/authUtils";
 import { startKeepAlive, stopKeepAlive } from "./keepAlive";
+import { MSG } from "../utils/messages";
 
 declare const chrome: any;
 
@@ -41,7 +42,7 @@ export async function executeSubstitutionInBackground(
 
         chrome.tabs
             .sendMessage(tabId, {
-                type: "SUBSTITUTION_STATUS_UPDATE",
+                type: MSG.substitutionStatusUpdate,
                 status: `Analyzing request (~${approximateTokens} tokens)...`,
                 isComplete: false,
                 isError: false,
@@ -59,7 +60,7 @@ export async function executeSubstitutionInBackground(
             if (statusIndex < statuses.length) {
                 chrome.tabs
                     .sendMessage(tabId, {
-                        type: "SUBSTITUTION_STATUS_UPDATE",
+                        type: MSG.substitutionStatusUpdate,
                         status: statuses[statusIndex],
                         isComplete: false,
                         isError: false,
@@ -78,7 +79,7 @@ export async function executeSubstitutionInBackground(
 
         chrome.tabs
             .sendMessage(tabId, {
-                type: "SUBSTITUTION_STATUS_UPDATE",
+                type: MSG.substitutionStatusUpdate,
                 status: "Substitutions generated successfully!",
                 result,
                 isComplete: true,
@@ -89,7 +90,7 @@ export async function executeSubstitutionInBackground(
         console.error("Substitution error in background:", error);
         chrome.tabs
             .sendMessage(tabId, {
-                type: "SUBSTITUTION_STATUS_UPDATE",
+                type: MSG.substitutionStatusUpdate,
                 status: `Error: ${error.message || "Unknown error occurred"}`,
                 isComplete: true,
                 isError: true,

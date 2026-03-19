@@ -12,6 +12,8 @@
  */
 
 import type { Recipe } from "../types/recipe";
+import { getLocal } from "./storage";
+import { getApiBase } from "./llmClient";
 
 /** Reads the stored access token, returns null for BYOK/unauthenticated users. */
 async function getAccessToken(): Promise<string | null> {
@@ -19,7 +21,7 @@ async function getAccessToken(): Promise<string | null> {
         console.warn("[Sync] chrome.storage.local unavailable — skipping sync.");
         return null;
     }
-    const data = await chrome.storage.local.get(["supabaseToken", "llmProvider"]);
+    const data = await getLocal(["supabaseToken", "llmProvider"]);
     console.log(`[Sync:auth] llmProvider=${data.llmProvider ?? "(unset)"} | token=${data.supabaseToken ? "present" : "MISSING"}`);
     // Only OAuth users (`google` provider) have a Supabase JWT.
     if (data.llmProvider !== "google") {
@@ -30,29 +32,9 @@ async function getAccessToken(): Promise<string | null> {
         console.warn("[Sync:auth] llmProvider=google but supabaseToken is missing from storage.");
         return null;
     }
-    return data.supabaseToken as string;
+    return data.supabaseToken;
 }
 
-/**
- * Resolves the backend API base URL.
- *
- * We deliberately avoid import.meta.env here because sync.ts is bundled by
- * esbuild (not Vite), so Vite environment variables are never substituted.
- * Instead we read the value from chrome.storage.local where the setup page
- * persists it, with a localhost fallback for local development.
- */
-async function getApiBase(): Promise<string> {
-    if (typeof chrome === "undefined" || !chrome.storage?.local) {
-        return "http://127.0.0.1:8000";
-    }
-    const data = await chrome.storage.local.get("apiUrl");
-    const resolved = (data.apiUrl as string | undefined) ?? "http://127.0.0.1:8000";
-    // Default to 127.0.0.1 (not localhost) — Chrome service workers can have
-    // issues resolving 'localhost' on some systems, while 127.0.0.1 always works.
-    // This matches the hardcoded address used by parser.ts for /extract/.
-    console.log(`[Sync:url] apiUrl from storage: ${data.apiUrl ?? "(unset, using default)"} → resolved: ${resolved}`);
-    return resolved;
-}
 
 /**
  * Upserts a recipe to the cloud backend.

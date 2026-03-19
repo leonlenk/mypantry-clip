@@ -7,6 +7,8 @@
 
 import feather from "feather-icons";
 import { getAllRecipes, deleteRecipe, saveRecipeLocally } from "../../utils/db";
+import { getLocal, setLocal } from "../../utils/storage";
+import { MSG } from "../../utils/messages";
 import type { Recipe } from "../../types/recipe";
 import { pantryState } from "./pantryState";
 import {
@@ -165,10 +167,9 @@ async function handleBulkDelete() {
     await Promise.all(toDelete.map((id) => deleteRecipe(id)));
 
     if (urlsToRemove.length > 0 && typeof chrome !== "undefined" && chrome.storage?.local) {
-        const data = await chrome.storage.local.get("savedUrls");
-        let urls: string[] = Array.isArray(data.savedUrls) ? data.savedUrls : [];
-        urls = urls.filter((u) => !urlsToRemove.includes(u));
-        await chrome.storage.local.set({ savedUrls: urls });
+        const data = await getLocal(["savedUrls"]);
+        const urls = (data.savedUrls ?? []).filter((u) => !urlsToRemove.includes(u));
+        await setLocal({ savedUrls: urls });
     }
 
     resetSelection();
@@ -199,7 +200,7 @@ async function handleBulkShare() {
     const cleanRecipes = selected.map(({ embedding: _e, tags: _t, ...r }) => r);
 
     const res: { success: boolean; url?: string; error?: string } =
-        await chrome.runtime.sendMessage({ type: "SHARE_RECIPE", recipes: cleanRecipes });
+        await chrome.runtime.sendMessage({ type: MSG.shareRecipe, recipes: cleanRecipes });
 
     if (!res.success) {
         if (res.error === "not_authenticated") {

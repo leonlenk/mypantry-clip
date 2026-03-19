@@ -1,3 +1,5 @@
+import { getLocal, setLocal } from "./storage";
+
 const hardcodedPricing: Record<string, string> = {
     // Google
     "models/gemini-2.5-flash": "Cheaper",
@@ -143,7 +145,7 @@ export async function loadByokSettings(idPrefix: string, apiKey: string) {
     // Stash the stored key so provider-change handlers can use it when the input is left blank
     if (inputApiKey && apiKey) inputApiKey.dataset.storedKey = apiKey;
 
-    const storageResult: Record<string, any> = await chrome.storage.local.get(["llmProvider", "llmModel"]);
+    const storageResult = await getLocal(["llmProvider", "llmModel"]);
     let currentModel = "";
 
     if (storageResult.llmProvider) selectProvider.value = storageResult.llmProvider;
@@ -212,8 +214,8 @@ export async function initializeByokForm(options: ByokFormOptions) {
         btnSubmit.textContent = "Saving...";
 
         try {
-            const storagePayload: any = {
-                llmProvider: provider,
+            const storagePayload: Parameters<typeof setLocal>[0] = {
+                llmProvider: provider as any,
                 llmModel: model,
             };
 
@@ -224,8 +226,6 @@ export async function initializeByokForm(options: ByokFormOptions) {
                 storagePayload.apiMode = "byok";
                 storagePayload.plaintextApiKey = key;
 
-                // Clear any cached key since we are changing it
-                chrome.runtime.sendMessage({ type: "CLEAR_CACHED_API_KEY" });
             }
 
             if (!isSettingsMode) {
@@ -233,7 +233,7 @@ export async function initializeByokForm(options: ByokFormOptions) {
                 storagePayload.apiUrl = import.meta.env.PUBLIC_API_URL ?? "http://127.0.0.1:8000";
             }
 
-            await chrome.storage.local.set(storagePayload);
+            await setLocal(storagePayload);
 
             if (statusMsg) {
                 statusMsg.textContent = "Settings saved!";

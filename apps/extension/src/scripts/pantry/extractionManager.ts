@@ -8,6 +8,7 @@
 
 import { pantryState } from "./pantryState";
 import { loadRecipes } from "./recipeRenderer";
+import { MSG } from "../../utils/messages";
 
 declare const chrome: any;
 
@@ -39,7 +40,7 @@ export function wireCancelExtractionHandler() {
         }
 
         if (typeof chrome !== "undefined" && chrome.runtime?.sendMessage) {
-            chrome.runtime.sendMessage({ type: "CANCEL_EXTRACTION", url }).catch(() => {});
+            chrome.runtime.sendMessage({ type: MSG.cancelExtraction, url }).catch(() => {});
         }
     });
 }
@@ -48,12 +49,12 @@ export function wireExtractionListener() {
     if (typeof chrome === "undefined" || !chrome.runtime?.onMessage) return;
 
     chrome.runtime.onMessage.addListener((message: any) => {
-        if (message.type === "RECIPE_SAVED_FROM_SHARE") {
+        if (message.type === MSG.recipeSavedFromShare) {
             loadRecipes();
             return;
         }
 
-        if (message.type !== "EXTRACTION_STATUS_UPDATE") return;
+        if (message.type !== MSG.extractionStatusUpdate) return;
 
         if (message.isComplete) {
             if (message.isError) {

@@ -10,6 +10,7 @@
 import feather from "feather-icons";
 import type { Recipe } from "../../types/recipe";
 import { pantryState } from "./pantryState";
+import { LS } from "../../utils/storage";
 
 const searchBadgesContainer = document.getElementById("search-badges");
 const searchInput = document.getElementById("semantic-search") as HTMLInputElement;
@@ -27,7 +28,7 @@ export function extractTags(allRecipes: Recipe[]) {
         (t) => pantryState.allKnownTags.has(t)
     );
     if (pantryState.currentTagFilters.length !== origLength) {
-        localStorage.setItem("pantryTagFilters", JSON.stringify(pantryState.currentTagFilters));
+        localStorage.setItem(LS.pantryTagFilters, JSON.stringify(pantryState.currentTagFilters));
     }
     renderSearchBadges();
 }
@@ -54,7 +55,7 @@ export function renderSearchBadges() {
         `;
         badge.querySelector("button")?.addEventListener("click", () => {
             pantryState.currentTagFilters.splice(idx, 1);
-            localStorage.setItem("pantryTagFilters", JSON.stringify(pantryState.currentTagFilters));
+            localStorage.setItem(LS.pantryTagFilters, JSON.stringify(pantryState.currentTagFilters));
             renderSearchBadges();
             // Trigger search refresh — imported lazily to avoid circular dep
             import("./searchManager").then(({ handleSearch }) => handleSearch());
@@ -84,7 +85,7 @@ export function renderSearchBadges() {
             item.querySelector("button")?.addEventListener("click", (e) => {
                 e.stopPropagation();
                 pantryState.currentTagFilters.splice(realIdx, 1);
-                localStorage.setItem("pantryTagFilters", JSON.stringify(pantryState.currentTagFilters));
+                localStorage.setItem(LS.pantryTagFilters, JSON.stringify(pantryState.currentTagFilters));
                 renderSearchBadges();
                 import("./searchManager").then(({ handleSearch }) => handleSearch());
             });

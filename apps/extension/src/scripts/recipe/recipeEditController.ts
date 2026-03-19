@@ -9,6 +9,7 @@
  */
 
 import { getRecipe, saveRecipeLocally } from "../../utils/db";
+import { MSG } from "../../utils/messages";
 
 // ─── Unit datalists (injected once into the document) ─────────────────────────
 
@@ -98,7 +99,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 ].filter(Boolean).join(". ");
                 if (embeddingText) {
                     const result: { success: boolean; embedding?: number[] } =
-                        await chrome.runtime.sendMessage({ type: "GENERATE_EMBEDDING", text: embeddingText });
+                        await chrome.runtime.sendMessage({ type: MSG.generateEmbedding, text: embeddingText });
                     if (result?.success && result.embedding) {
                         await saveRecipeLocally({ ...saved, embedding: result.embedding });
                     }
