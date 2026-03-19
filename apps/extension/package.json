@@ -14,7 +14,8 @@
     "test:unit": "vitest run",
     "test:e2e": "playwright test",
     "test:firefox": "pnpm run build && NODE_OPTIONS=--no-deprecation web-ext run -t firefox-desktop -s dist",
-    "test:chromium": "pnpm run build && NODE_OPTIONS=--no-deprecation web-ext run -t chromium -s dist"
+    "test:chromium": "pnpm run build && NODE_OPTIONS=--no-deprecation web-ext run -t chromium -s dist",
+    "zip": "pnpm run build && zip -r my-pantry.zip dist/"
   },
   "dependencies": {
     "@huggingface/transformers": "^3.8.1",

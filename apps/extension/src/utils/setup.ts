@@ -172,12 +172,10 @@ async function doPostModelSync() {
         if (syncBar) syncBar.style.width = "100%";
 
         const pulled = pullResult.success ? pullResult.merged : 0;
-        const pushed = pushResult.success ? pushResult.pushed : 0;
-        const total = pulled + pushed;
 
         if (syncText) {
-            syncText.textContent = total > 0
-                ? `Synced ${total} recipe${total !== 1 ? "s" : ""}!`
+            syncText.textContent = pulled > 0
+                ? `Synced ${pulled} recipe${pulled !== 1 ? "s" : ""}!`
                 : "You're all set — recipes will sync automatically!";
         }
     } catch (err) {

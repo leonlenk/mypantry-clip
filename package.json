@@ -11,7 +11,7 @@
         "ext:test:e2e": "node scripts/build-ext-if-stale.mjs && pnpm --filter mypantry test:e2e",
         "ext:test:firefox": "pnpm --filter mypantry test:firefox",
         "ext:test:chromium": "pnpm --filter mypantry test:chromium",
-        "ext:zip": "cd apps/extension && zip -r my-pantry.zip dist/",
+        "ext:zip": "pnpm --filter mypantry zip",
         "test": "node scripts/test-all.mjs",
         "db:push": "pnpm exec supabase db push",
         "db:reset": "pnpm exec supabase db reset",

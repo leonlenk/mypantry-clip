@@ -10,7 +10,9 @@
 
 **[Visit Our Homepage: mypantry.dev](https://mypantry.dev)**
 
-**MyPantry** (Extension Name: **Pantry Clip**) is a privacy-first, hybrid-architecture recipe assistant. It consists of a minimal-permission browser extension acting as the edge client, and a rate-limited Python FastAPI backend for cloud synchronization and LLM orchestration. 
+**MyPantry** (Extension Name: **Pantry Clip**) is a privacy-first recipe clipper and assistant. Clip any recipe from the web with one click, search your collection semantically, scale ingredients, convert units, and get AI-powered substitutions — all with your data stored locally on your device.
+
+---
 
 ## 📸 Visual Showcase
 
@@ -20,60 +22,88 @@
   <br><br>
   <table width="100%">
     <tr>
-      <td align="center" width="50%">
-        <b>Extension Popup</b><br>
-        <img src="general_assets/extension_popup.png" alt="Extension Popup" width="300">
+      <td align="center" width="33%">
+        <b>Extension Popup</b><br><br>
+        <img src="general_assets/extension_popup.png" alt="Extension Popup" width="260">
       </td>
-      <td align="center" width="50%">
-        <b>Mobile Ingredients</b><br>
-        <img src="general_assets/mobile_ingredients.png" alt="Mobile Ingredients View" width="300">
+      <td align="center" width="33%">
+        <b>Ingredient Substitutions</b><br><br>
+        <img src="general_assets/ask_for_substitutes.png" alt="AI Ingredient Substitutions" width="260">
+      </td>
+      <td align="center" width="33%">
+        <b>Mobile Ingredient View</b><br><br>
+        <img src="general_assets/mobile_ingredients.png" alt="Mobile Ingredients View" width="260">
       </td>
     </tr>
   </table>
 </div>
 
-The system leverages on-device edge AI for computing vector embeddings, enabling zero-cost backend scaling while keeping all user data perfectly private. It supports a **Bring Your Own Key (BYOK)** mode, a **Freemium Cloud-Synced** mode powered by Google OAuth, or both simultaneously — cloud auth and BYOK are fully orthogonal.
+---
+
+## ✨ Features
+
+### One-Click Recipe Saving
+Click the extension icon on any recipe page and hit **Extract & Add to Pantry**. The extension reads the page DOM, sends it to an LLM for normalization, and saves a clean structured recipe to your local library — ingredients, instructions, tags, source URL, and all. No copy-pasting.
+
+### Semantic Search
+Search your pantry using natural language. The extension computes a 384-dimensional vector embedding for every recipe entirely on your device using `Transformers.js` and a quantized Snowflake embedding model. Search combines BM25 full-text matching with cosine vector similarity (hybrid mode) so you can find recipes by concept, not just keyword — e.g. *"something chocolatey for a dinner party"*.
+
+### Unit Conversion & Batch Scaling
+Every recipe view includes a unit toggle (US / Metric) and a yield input. Adjust the serving count and all ingredient quantities scale proportionally. Switch between volume and metric units with one click. Conversion notes (e.g. *"12 Tbsp"*, *"bittersweet / 70% cocoa"*) are preserved inline.
+
+### AI Ingredient Substitutions
+On any recipe, tap **Ask for Substitutions** to open an AI-assisted substitution panel. The LLM analyzes the chemical role of each ingredient (binding, leavening, moisture, fat) and suggests a mathematically adjusted substitute. Applied substitutions are shown inline — the original ingredient is struck through and the replacement appears below it, with a one-click revert.
+
+### Tag Filtering & Organization
+Recipes are automatically tagged during extraction. The dashboard includes filterable tag chips, bulk tag editing, and bulk delete/share actions. Tags are normalized to uppercase and deduplicated on save.
+
+### Favorites & Recents
+Quick-access filters for your most recently clipped and starred recipes sit at the top of the dashboard. No digging through the full library needed.
+
+### Export / Import
+Download your entire recipe collection as a portable JSON file at any time. Re-import it on a new device or share it with someone else. You always own your data.
+
+### Bring Your Own Key (BYOK)
+Don't want to use the cloud API? Provide your own API key (Anthropic, Google Gemini, OpenAI, or OpenRouter) and all LLM calls are made directly from your browser. BYOK and cloud mode are fully independent — you can use both simultaneously.
+
+### Optional Cloud Sync
+Sign in with Google to back up your recipe library to Supabase. Cloud sync is JSON-only: embeddings are never uploaded, and are re-generated locally when you import on a new device. The backend never stores or computes vectors.
 
 ---
 
 ## 🏗️ Architecture Overview
 
-The project is structured as a monorepo containing two main applications:
+The project is a monorepo with two applications:
 
-1. **Client Extension (`/apps/extension`)**: A Manifest V3 Chrome extension built with **Astro**. It handles local UI rendering, DOM extraction, and running local AI models.
-2. **Cloud API (`/apps/api`)**: A **FastAPI** Python server managed by `uv`. It strictly acts as a secure router, rate limiter, and LLM proxy.
+1. **Client Extension (`/apps/extension`)**: A Manifest V3 Chrome extension built with **Astro**. Handles local UI rendering, DOM extraction, local embedding computation, and IndexedDB storage.
+2. **Cloud API (`/apps/api`)**: A **FastAPI** Python server managed by `uv`. Acts as a secure LLM proxy, rate limiter, and Supabase router — no AI compute runs server-side.
 
 ### Tech Stack
-- **Extension Framework**: Astro (HTML/JS/TS) with scoped SCSS styling and `@mozilla/readability` for DOM parsing.
-- **Extension Tooling**: Managed via `pnpm` and built for Manifest V3.
-- **Edge AI**: `Transformers.js` executing local vector generation using quantized models (like Snowflake/snowflake-arctic-embed-s int4) via WASM in a `chrome.offscreen` document.
-- **Local Database**: Semantic search is powered by `Orama`, persisted to `IndexedDB` on the client device. Vectors are stored locally, not in the cloud.
-- **Backend API**: FastAPI (Python 3.10+), managed by the `uv` package manager, and utilizing `loguru` for structured telemetry.
-- **LLM Integrations**: Directly utilizing Claude and Gemini provider APIs using Structured Outputs (no heavy abstraction frameworks).
-- **Database & Auth**: Supabase (Postgres & Google OAuth). *Note: Vectors are strictly computed and stored locally on the client-side; Supabase is solely used for cloud backup state and does not use `pgvector`.*
-- **Rate Limiting**: Upstash (Serverless Redis) for robust, fixed-window abuse prevention (50 req/week per user per endpoint).
-- **Security Layer**: Strict permission scoping with minimal Chrome API surface (`activeTab`, `scripting`, `storage`, `offscreen`).
+- **Extension Framework**: Astro (HTML/JS/TS) with scoped SCSS styling and `@mozilla/readability` for DOM parsing
+- **Edge AI**: `Transformers.js` with a quantized `Snowflake/snowflake-arctic-embed-s` model (int8, 384-dim) running via WASM in a `chrome.offscreen` document
+- **Local Database**: `Orama` for hybrid BM25 + vector search, persisted to `IndexedDB`; vectors are stored locally, never in the cloud
+- **Backend API**: FastAPI (Python 3.10+) managed by `uv`
+- **LLM Integrations**: Gemini 2.5 Flash (cloud mode) and direct Anthropic/OpenAI/Google/OpenRouter (BYOK) using Structured Outputs
+- **Database & Auth**: Supabase (Postgres + Google OAuth) for cloud sync only — no `pgvector`
+- **Rate Limiting**: Upstash (Serverless Redis), fixed-window per user per endpoint (50 req/week)
 
----
+### Extraction Pipeline
 
-## ✨ Core Workflows & Optimizations
+When a user clips a recipe, the extension runs a 3-tier waterfall:
 
-### 1. Hybrid Extraction (`/api/extract`)
-When a user clips a recipe, the extension attempts a 3-tier waterfall extraction:
-1. **Tier 1 (Structured):** Queries `application/ld+json` for the `@type: "Recipe"` schema.
-2. **Tier 2 (Targeted DOM):** Searches specifically for recipe cards/classes if structured data is missing.
-3. **Tier 3 (Fallback):** Injects `Readability.js` to aggressively prune boilerplate HTML and grab the core article.
+1. **Tier 1 (Structured):** Queries `application/ld+json` for the `@type: "Recipe"` schema
+2. **Tier 2 (Targeted DOM):** Searches for recipe cards/classes if structured data is missing
+3. **Tier 3 (Fallback):** Injects `Readability.js` to strip boilerplate and grab the core article
 
-The data is then sent to the backend, which proxies it through `gemini-2.5-flash` or `claude-3-5-sonnet` (using Structured Outputs) to normalize the recipe into a strict JSON schema.
+The result is sent to the LLM (cloud or BYOK), which normalizes it into a strict JSON schema with title, ingredients, instructions, tags, yield, and a semantic summary used for embedding.
 
-### 2. Edge Vectorization
-To drastically reduce cloud overhead, **the backend never calculates embeddings**. Instead, the extension calculates a mathematical vector array representing the recipe directly on the user's device using `Transformers.js` (quantized models). This process executes inside a dedicated `chrome.offscreen` document to bypass service-worker execution limits.
+### Embedding Pipeline
 
-### 3. Agentic Substitution (`/api/substitute`)
-Users can ask for ingredient substitutions. The backend passes the active recipe context to the LLM, prompting it to analyze the chemical properties of the target ingredient (e.g., binding, leavening, moisture) and compute a mathematically adjusted substitute.
-
-### 4. Zero-Compute Cloud Sync
-If the user authenticates via Supabase (Google OAuth), the extension pushes its JSON recipe backups to the Python API. The backend strictly routes this to standard Supabase Postgres for backup without executing any server-side AI compute and without needing expensive vector database instances.
+1. LLM returns normalized recipe JSON
+2. Background service worker sends recipe text to the offscreen document
+3. `Transformers.js` computes a 384-dim vector locally (WebGPU / WASM)
+4. Recipe + embedding stored in IndexedDB; Orama search index rebuilt in memory
+5. Search uses hybrid mode — BM25 full-text + cosine vector similarity
 
 ---
 
@@ -82,16 +112,16 @@ If the user authenticates via Supabase (Google OAuth), the extension pushes its 
 ### Prerequisites
 - [Node.js](https://nodejs.org/) (v18+) & [pnpm](https://pnpm.io/)
 - [Python 3.14+](https://www.python.org/) & [uv](https://github.com/astral-sh/uv)
-- A [Supabase](https://supabase.com/) project (using standard Postgres)
+- A [Supabase](https://supabase.com/) project (standard Postgres)
 - An [Upstash Redis](https://upstash.com/) database
-- Standard API Keys for testing (Gemini, Anthropic, etc.)
+- API keys for testing (Gemini, Anthropic, etc.)
 
 ### 1. Backend Setup (`/apps/api`)
 ```bash
 cd apps/api
 cp .env.example .env
 ```
-Fill out the variables in `.env` (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `UPSTASH_REDIS_REST_URL`, etc.).
+Fill out the variables in `.env` (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `UPSTASH_REDIS_REST_URL`, `GEMINI_API_KEY`, etc.).
 
 ```bash
 uv run uvicorn main:app --reload --port 8000
@@ -102,7 +132,7 @@ uv run uvicorn main:app --reload --port 8000
 cd apps/extension
 cp .env.example .env
 ```
-Ensure `PUBLIC_SUPABASE_URL` and `PUBLIC_SUPABASE_ANON_KEY` are set.
+Set `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_ANON_KEY`, and `PUBLIC_API_URL`.
 
 ```bash
 pnpm install
@@ -110,42 +140,44 @@ pnpm build
 ```
 
 ### 3. Loading the Extension
-1. Open Google Chrome and navigate to `chrome://extensions/`.
-2. Enable **Developer mode** in the top right.
-3. Click **Load unpacked** and select the `apps/extension/dist` directory.
-4. The Extension will automatically open the Onboarding/Setup page.
+1. Open Google Chrome and navigate to `chrome://extensions/`
+2. Enable **Developer mode** in the top right
+3. Click **Load unpacked** and select the `apps/extension/dist` directory
+4. The extension will automatically open the onboarding/setup page
 
 ---
 
 ## 🔒 Security & Privacy Model
-- **Strict Permission Scoping**: Requires only `"activeTab"`, `"scripting"`, `"storage"`, and `"offscreen"`. Does *not* request `<all_urls>`.
-- **Local Key Storage**: In BYOK mode, user-provided API keys are stored in `chrome.storage.local`, which is sandboxed to the extension and not accessible to web pages.
-- **Fail-Safe Export**: The dashboard includes an export/import feature, ensuring users retain total ownership of their recipe JSON data regardless of cloud connectivity.
-- **Isolated Sandboxing**: Operations that require high compute are walled off in Chrome's background service worker and offscreen documents, keeping the visible DOM lightweight and snappy.
+
+- **Minimal Permissions**: Only `activeTab`, `scripting`, `storage`, and `offscreen` — no `<all_urls>`
+- **Local-First Storage**: All recipe data and embeddings live in `IndexedDB` on your device. Cloud sync is opt-in and stores JSON only.
+- **Local Key Storage**: In BYOK mode, API keys are stored in `chrome.storage.local`, sandboxed to the extension
+- **No Server-Side Vectors**: The backend never computes or stores embeddings — all AI vector work runs on-device
+- **Fail-Safe Export**: Full JSON export/import means you're never locked in
 
 ### Extension Permissions
 
 | Permission | Justification |
 |---|---|
-| `activeTab` | Grants temporary access to the currently active tab when the user clicks the extension icon. Used to inject the content script that extracts the recipe DOM — no persistent or background access to any tab. |
-| `scripting` | Required to programmatically inject `content.js` into the active tab for DOM extraction. Works in concert with `activeTab` and is scoped to only the tab the user explicitly interacts with. |
-| `storage` | Persists user settings (theme, BYOK provider preference) and BYOK API keys (encrypted with Web Crypto AES-GCM) via `chrome.storage.local`. All data is sandboxed to the extension and inaccessible to web pages. |
-| `offscreen` | Creates a hidden offscreen document (`offscreen.html`) to run `Transformers.js` for local vector embedding computation. Service workers cannot use the Web GPU / WASM APIs required by the AI model, so this isolated context is mandatory. |
+| `activeTab` | Temporary access to the active tab when the user clicks the icon — used to inject the content script for DOM extraction. No persistent or background tab access. |
+| `scripting` | Required to programmatically inject `content.js` into the active tab. Scoped to only the tab the user explicitly interacts with. |
+| `storage` | Persists settings, BYOK provider preferences, and API keys via `chrome.storage.local`. All data is sandboxed to the extension. |
+| `offscreen` | Creates a hidden offscreen document to run `Transformers.js` for local vector embedding. Service workers cannot use WebGPU/WASM, so this isolated context is mandatory. |
 
 ### Host Permissions
 
 | Host | Justification |
 |---|---|
-| `https://mypantry.dev/*` | The only host the extension communicates with. Used for the cloud API proxy (`/extract`, `/substitute`, `/sync`, `/auth`) and to run the injected content script on the mypantry.dev web app. No other domains are contacted by the extension itself. |
+| `https://mypantry.dev/*` | The only external host the extension contacts — used for the cloud API proxy (`/extract`, `/substitute`, `/sync`, `/auth`). No other domains are contacted by the extension. |
 
 ---
 
 ## 🎨 Brand Identity
 
 - **Name**: MyPantry / Pantry Clip
-- **Design Philosophy**: Utility-focused, Engineering-chic. Minimalist UI with "NYT Cooking" inspired aesthetics.
-- **Typography**: `Fraunces` (headings) / `Quicksand` (body) / Monospace (data).
-- **Core Colors**: 
+- **Design Philosophy**: Utility-focused, engineering-chic. Minimalist UI with NYT Cooking-inspired aesthetics.
+- **Typography**: `Fraunces` (headings) / `Quicksand` (body) / Monospace (data)
+- **Core Colors**:
   - Accent: `#E5B299` (Warm Apricot)
   - Primary: `#4A4036` (Espresso)
   - Background: `#FDFBF7` (Vanilla Cream)

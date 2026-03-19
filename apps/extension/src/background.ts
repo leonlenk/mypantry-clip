@@ -253,7 +253,6 @@ chrome.runtime.onMessage.addListener((message: any, sender: any, sendResponse: a
                     }
 
                     await saveRecipeLocally(recipe);
-                    await syncRecipeToCloud(recipe);
                 }
 
                 chrome.runtime.sendMessage({ type: MSG.recipeSavedFromShare }).catch(() => {});
