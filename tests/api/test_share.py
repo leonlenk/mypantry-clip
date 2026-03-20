@@ -184,6 +184,232 @@ class TestSharePost:
 # GET /s/{id}
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# Helper function unit tests
+# ---------------------------------------------------------------------------
+
+class TestDecimalToFraction:
+    """Tests for src/routers/share._decimal_to_fraction"""
+
+    def _fn(self, q):
+        from src.routers.share import _decimal_to_fraction
+        return _decimal_to_fraction(q)
+
+    def test_zero_returns_zero(self):
+        assert self._fn(0) == "0"
+
+    def test_negative_returns_zero(self):
+        assert self._fn(-1) == "0"
+
+    def test_whole_number(self):
+        assert self._fn(2.0) == "2"
+
+    def test_half(self):
+        assert self._fn(0.5) == "1/2"
+
+    def test_one_and_a_half(self):
+        assert self._fn(1.5) == "1 1/2"
+
+    def test_quarter(self):
+        assert self._fn(0.25) == "1/4"
+
+    def test_three_quarters(self):
+        assert self._fn(0.75) == "3/4"
+
+    def test_third(self):
+        assert self._fn(1 / 3) == "1/3"
+
+    def test_fraction_close_to_one_rounds_up(self):
+        # 0.97 is closer to 1 than any fraction entry, so rounds to whole+1
+        assert self._fn(0.97) == "1"
+
+    def test_whole_with_very_small_frac_dropped(self):
+        # frac < 0.05 → just show whole
+        assert self._fn(2.02) == "2"
+
+    def test_fraction_with_large_error_shows_decimal(self):
+        # 0.19 is more than 0.05 from any named fraction → falls back to round(q, 2)
+        # Nearest fraction is 1/8 (0.125); abs(0.125 - 0.19) = 0.065 > 0.05
+        result = self._fn(0.19)
+        assert result == "0.19"
+
+
+class TestFormatIngredientText:
+    """Tests for src/routers/share._format_ingredient_text"""
+
+    def _fn(self, ing):
+        from src.routers.share import _format_ingredient_text
+        return _format_ingredient_text(ing)
+
+    def test_falls_back_to_raw_text_when_no_item(self):
+        ing = {"rawText": "1 cup flour", "item": ""}
+        assert self._fn(ing) == "1 cup flour"
+
+    def test_item_with_amount_and_unit(self):
+        ing = {"item": "flour", "us_amount": 1.5, "us_unit": "cups"}
+        result = self._fn(ing)
+        assert "1 1/2" in result
+        assert "cups" in result
+        assert "flour" in result
+
+    def test_item_with_preparation(self):
+        ing = {"item": "onion", "us_amount": 1.0, "us_unit": "cup", "preparation": "chopped"}
+        result = self._fn(ing)
+        assert ", chopped" in result
+
+    def test_item_without_amount(self):
+        ing = {"item": "salt"}
+        assert self._fn(ing) == "salt"
+
+    def test_invalid_amount_is_skipped(self):
+        ing = {"item": "butter", "us_amount": "not-a-number", "us_unit": "cup"}
+        result = self._fn(ing)
+        # amount can't be parsed, so skip it but still include item
+        assert "butter" in result
+
+    def test_falls_back_to_raw_when_result_empty(self):
+        # If item is present but everything else is empty, return item
+        ing = {"item": "salt", "rawText": "a pinch of salt"}
+        assert self._fn(ing) == "salt"
+
+
+class TestFormatTime:
+    """Tests for src/routers/share._format_time"""
+
+    def _fn(self, minutes):
+        from src.routers.share import _format_time
+        return _format_time(minutes)
+
+    def test_none_returns_none(self):
+        assert self._fn(None) is None
+
+    def test_zero_returns_none(self):
+        assert self._fn(0) is None
+
+    def test_minutes_only(self):
+        assert self._fn(30) == "30 min"
+
+    def test_hours_only(self):
+        assert self._fn(120) == "2h"
+
+    def test_hours_and_minutes(self):
+        assert self._fn(90) == "1h 30min"
+
+
+class TestIngredientsHtml:
+    """Tests for src/routers/share._ingredients_html"""
+
+    def _fn(self, ingredients):
+        from src.routers.share import _ingredients_html
+        return _ingredients_html(ingredients)
+
+    def test_group_header_rendered(self):
+        ings = [
+            {"group": "Cake", "item": "flour"},
+            {"group": "Cake", "item": "sugar"},
+        ]
+        html = self._fn(ings)
+        assert "ing-group-header" in html
+        assert "Cake" in html
+
+    def test_group_header_not_repeated_for_same_group(self):
+        ings = [
+            {"group": "Sauce", "item": "tomato"},
+            {"group": "Sauce", "item": "garlic"},
+        ]
+        html = self._fn(ings)
+        # Group header should appear exactly once
+        assert html.count("ing-group-header") == 1
+
+    def test_subtext_rendered(self):
+        ings = [{"item": "butter", "subtext": "or margarine"}]
+        html = self._fn(ings)
+        assert "ing-subtext" in html
+        assert "or margarine" in html
+
+    def test_no_subtext_plain_li(self):
+        ings = [{"item": "salt"}]
+        html = self._fn(ings)
+        assert "ing-subtext" not in html
+        assert "<li>salt</li>" in html
+
+
+class TestInstructionsHtml:
+    """Tests for src/routers/share._instructions_html"""
+
+    def _fn(self, instructions):
+        from src.routers.share import _instructions_html
+        return _instructions_html(instructions)
+
+    def test_group_header_rendered(self):
+        steps = [
+            {"group": "Sauce", "text": "Simmer tomatoes."},
+            {"group": "Sauce", "text": "Add garlic."},
+        ]
+        html = self._fn(steps)
+        assert "inst-group-header" in html
+        assert "Sauce" in html
+
+    def test_group_header_not_repeated(self):
+        steps = [
+            {"group": "Frosting", "text": "Beat butter."},
+            {"group": "Frosting", "text": "Add sugar."},
+        ]
+        html = self._fn(steps)
+        assert html.count("inst-group-header") == 1
+
+    def test_plain_step_rendered(self):
+        steps = [{"text": "Mix ingredients."}]
+        html = self._fn(steps)
+        assert "Mix ingredients." in html
+        assert "inst-group-header" not in html
+
+
+class TestRenderSingleRecipePage:
+    """Tests for _render_single_recipe_page — optional field branches."""
+
+    def _render(self, recipe, expiry_days=30):
+        from src.routers.share import _render_single_recipe_page
+        return _render_single_recipe_page(recipe, expiry_days)
+
+    def test_author_rendered(self):
+        recipe = {"title": "Soup", "author": "Julia", "ingredients": [], "instructions": []}
+        html = self._render(recipe)
+        assert "By Julia" in html
+
+    def test_source_url_rendered(self):
+        recipe = {"title": "Soup", "url": "https://example.com/soup", "ingredients": [], "instructions": []}
+        html = self._render(recipe)
+        assert "View original" in html
+        assert "https://example.com/soup" in html
+
+    def test_yield_text_rendered(self):
+        recipe = {"title": "Soup", "yield": "6 servings", "ingredients": [], "instructions": []}
+        html = self._render(recipe)
+        assert "Yield: 6 servings" in html
+
+    def test_servings_rendered_when_no_yield(self):
+        recipe = {"title": "Soup", "servings": 4, "ingredients": [], "instructions": []}
+        html = self._render(recipe)
+        assert "Servings: 4" in html
+
+    def test_notes_rendered(self):
+        recipe = {
+            "title": "Soup",
+            "ingredients": [],
+            "instructions": [],
+            "notes": ["Use fresh herbs.", "Can be frozen."],
+        }
+        html = self._render(recipe)
+        assert "Notes" in html
+        assert "Use fresh herbs." in html
+
+    def test_expiry_days_in_footer(self):
+        recipe = {"title": "Soup", "ingredients": [], "instructions": []}
+        html = self._render(recipe, expiry_days=7)
+        assert "7 days" in html
+
+
 class TestShareGetView:
 
     def _valid_row(self, title="Pancakes"):

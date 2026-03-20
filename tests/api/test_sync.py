@@ -191,6 +191,104 @@ class TestSyncList:
 # DELETE /api/sync/delete/{recipe_id}
 # ---------------------------------------------------------------------------
 
+class TestSyncImportEdgeCases:
+    """Additional import edge cases to cover missing branches."""
+
+    def test_import_all_recipes_missing_id_returns_zero(self, client, mock_verify_jwt, mock_supabase):
+        """When every recipe in the batch lacks an 'id', count returns 0 without hitting Supabase."""
+        recipes = [{"title": "No ID A"}, {"title": "No ID B"}]
+        resp = client.post("/api/sync/import", json={"recipes": recipes})
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["success"] is True
+        assert body["count"] == 0
+
+        # Supabase upsert should NOT have been called
+        _, chain, _ = mock_supabase
+        chain.upsert.assert_not_called()
+
+
+class TestSyncLatestError:
+    """Exception path for GET /api/sync/latest."""
+
+    def test_latest_supabase_error_returns_500(self, client, mock_verify_jwt):
+        """Supabase failure in get_latest_timestamp returns 500."""
+        mock_client = MagicMock()
+        chain = MagicMock()
+        chain.select.return_value = chain
+        chain.eq.return_value = chain
+        chain.order.return_value = chain
+        chain.limit.return_value = chain
+        chain.execute.side_effect = RuntimeError("DB down")
+        mock_client.table.return_value = chain
+
+        with patch("src.routers.sync.get_supabase_client", return_value=mock_client):
+            resp = client.get("/api/sync/latest")
+
+        assert resp.status_code == 500
+
+
+class TestSyncListEdgeCases:
+    """Streaming generator edge cases for GET /api/sync/list."""
+
+    def test_list_multiple_recipes_comma_separated(self, client, mock_verify_jwt, mock_supabase):
+        """Two recipes in the stream are comma-separated in the JSON output."""
+        _, _, mock_result = mock_supabase
+        mock_result.data = [
+            {"id": "r1", "recipe_json": {"title": "A"}, "updated_at": "2026-03-01T00:00:00Z"},
+            {"id": "r2", "recipe_json": {"title": "B"}, "updated_at": "2026-03-02T00:00:00Z"},
+        ]
+
+        resp = client.get("/api/sync/list")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert len(body["recipes"]) == 2
+
+    def test_list_generator_exception_returns_partial_json(self, client, mock_verify_jwt):
+        """When Supabase raises inside the generator, the response ends abruptly."""
+        mock_client = MagicMock()
+        chain = MagicMock()
+        chain.select.return_value = chain
+        chain.eq.return_value = chain
+        chain.order.return_value = chain
+        chain.range.return_value = chain
+        chain.execute.side_effect = RuntimeError("stream error")
+        mock_client.table.return_value = chain
+
+        with patch("src.routers.sync.get_supabase_client", return_value=mock_client):
+            resp = client.get("/api/sync/list")
+
+        # Response still comes back (generator catches and yields closing bracket)
+        assert resp.status_code == 200
+
+    def test_list_paginates_full_chunk(self, client, mock_verify_jwt):
+        """When first page returns exactly 50 rows, a second query is issued."""
+        mock_client = MagicMock()
+        chain = MagicMock()
+        chain.select.return_value = chain
+        chain.eq.return_value = chain
+        chain.order.return_value = chain
+        chain.range.return_value = chain
+
+        first_result = MagicMock()
+        first_result.data = [
+            {"id": f"r{i}", "recipe_json": {"title": f"R{i}"}, "updated_at": "2026-01-01"}
+            for i in range(50)
+        ]
+        second_result = MagicMock()
+        second_result.data = []  # second page is empty → loop ends
+
+        chain.execute.side_effect = [first_result, second_result]
+        mock_client.table.return_value = chain
+
+        with patch("src.routers.sync.get_supabase_client", return_value=mock_client):
+            resp = client.get("/api/sync/list")
+
+        assert resp.status_code == 200
+        assert len(resp.json()["recipes"]) == 50
+        assert chain.execute.call_count == 2
+
+
 class TestSyncDelete:
 
     def test_delete_success(self, client, mock_verify_jwt, mock_supabase):

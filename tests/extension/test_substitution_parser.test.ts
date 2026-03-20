@@ -119,6 +119,116 @@ describe("askSubstitution cloud — null guard on substitution field", () => {
 // BYOK path — parse error message preservation
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Cloud path — non-401 error (parseCloudApiError branch)
+// ---------------------------------------------------------------------------
+
+describe("askSubstitution cloud — non-401 error", () => {
+    it("throws a cloud-API error for 503", async () => {
+        vi.stubGlobal(
+            "fetch",
+            vi.fn().mockResolvedValue({
+                ok: false,
+                status: 503,
+                text: async () => "Service Unavailable",
+                json: async () => ({}),
+            })
+        );
+
+        await expect(
+            parserModule.askSubstitution(MINIMAL_RECIPE, "butter", "token", "none", "anthropic", "cloud")
+        ).rejects.toThrow(/busy/i);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Cloud path — fuzzy ingredient ID match (second OR condition)
+// ---------------------------------------------------------------------------
+
+describe("askSubstitution cloud — fuzzy ingredient match", () => {
+    it("matches when target_ingredient contains the ingredient item name", async () => {
+        // target_ingredient = "unsalted butter", ingredient item = "butter"
+        // Second OR: targetLower.includes(ing.item.toLowerCase())
+        vi.stubGlobal(
+            "fetch",
+            vi.fn().mockResolvedValue({
+                ok: true,
+                json: async () => ({
+                    substitution: {
+                        target_ingredient: "unsalted butter",  // contains "butter"
+                        substitution_name: "coconut oil",
+                        amount: 1.0,
+                        unit: "cup",
+                        reasoning: "Similar fat.",
+                    },
+                }),
+            })
+        );
+
+        const recipe = {
+            ...MINIMAL_RECIPE,
+            ingredients: [{ item: "butter", rawText: "1 cup butter" }],
+        };
+
+        const result = await parserModule.askSubstitution(recipe, "unsalted butter", "token", "none", "anthropic", "cloud");
+        expect(result.substitutions[0].ingredientId).toBe(0);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Cloud path — AbortError (timeout)
+// ---------------------------------------------------------------------------
+
+describe("askSubstitution cloud — AbortError timeout", () => {
+    it("throws a timeout error when the request is aborted", async () => {
+        vi.stubGlobal(
+            "fetch",
+            vi.fn().mockRejectedValue(Object.assign(new Error("aborted"), { name: "AbortError" }))
+        );
+
+        await expect(
+            parserModule.askSubstitution(MINIMAL_RECIPE, "butter", "token", "none", "anthropic", "cloud")
+        ).rejects.toThrow(/timed out/i);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// BYOK path — happy path (return parsed)
+// ---------------------------------------------------------------------------
+
+describe("askSubstitution BYOK — happy path", () => {
+    it("returns parsed result when LLM returns valid substitution JSON", async () => {
+        vi.stubGlobal(
+            "fetch",
+            vi.fn().mockResolvedValue({
+                ok: true,
+                json: async () => ({
+                    content: [{
+                        text: JSON.stringify({
+                            thoughtProcess: "Coconut oil has similar fat content.",
+                            substitutions: [{
+                                ingredientId: 0,
+                                quantity: 1.0,
+                                unit: "cup",
+                                item: "coconut oil",
+                                preparation: null,
+                                rawText: "1 cup coconut oil",
+                            }],
+                        }),
+                    }],
+                    stop_reason: "end_turn",
+                }),
+            })
+        );
+
+        const result = await parserModule.askSubstitution(
+            MINIMAL_RECIPE, "butter", "sk-ant-key", "claude-3-5-haiku-20241022", "anthropic", "byok"
+        );
+        expect(result.thoughtProcess.toLowerCase()).toContain("coconut oil");
+        expect(result.substitutions[0].item).toBe("coconut oil");
+    });
+});
+
 describe("askSubstitution BYOK — parse error detail preserved", () => {
     it("includes the underlying parse error in the thrown message", async () => {
         // Return a response whose text content is not valid JSON

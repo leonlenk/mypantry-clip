@@ -9,8 +9,19 @@ export default defineConfig({
         coverage: {
             provider: "v8",
             include: ["src/**/*.ts"],
-            exclude: ["src/**/*.d.ts"],
+            exclude: [
+                "src/**/*.d.ts",
+                // Page-level scripts tightly coupled to Chrome/DOM — not unit-testable
+                "src/scripts/**",
+                "src/background.ts",
+                "src/content.ts",
+                "src/background/**",
+                // DOM-heavy page helpers (require document.getElementById + event wiring)
+                "src/utils/byok.ts",
+                "src/utils/setup.ts",
+            ],
             reporter: ["text", "lcov", "html"],
+            all: true,
             reportsDirectory: "../../coverage/extension",
         },
     },

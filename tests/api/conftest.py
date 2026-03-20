@@ -42,6 +42,18 @@ def _patch_env(monkeypatch):
         monkeypatch.setenv(key, value)
 
 
+@pytest.fixture(autouse=True)
+def _mock_genai_client():
+    """
+    Mock google.genai.Client so the module-level constructor in src/services/llm.py
+    never attempts a real HTTP connection (blocked by SOCKS proxy in sandbox/CI).
+    Tests that need specific call behaviour patch `src.services.llm.client` directly.
+    """
+    with patch("google.genai.Client") as mock_ctor:
+        mock_ctor.return_value = MagicMock()
+        yield
+
+
 # ---------------------------------------------------------------------------
 # Lazy app import — deferred until after env is patched.
 # ---------------------------------------------------------------------------

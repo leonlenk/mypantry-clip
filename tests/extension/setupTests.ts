@@ -37,11 +37,31 @@ const chromeStorageLocal = {
     }),
 };
 
+const sessionData: Record<string, unknown> = {};
+
+const chromeStorageSession = {
+    get: vi.fn(async (keys?: string | string[]) => {
+        if (!keys) return { ...sessionData };
+        if (typeof keys === "string") return { [keys]: sessionData[keys] };
+        const result: Record<string, unknown> = {};
+        for (const k of Array.isArray(keys) ? keys : [keys]) result[k] = sessionData[k];
+        return result;
+    }),
+    set: vi.fn(async (items: Record<string, unknown>) => {
+        Object.assign(sessionData, items);
+    }),
+};
+
 const chromeRuntime = {
     sendMessage: vi.fn(),
     onMessage: { addListener: vi.fn() },
     onInstalled: { addListener: vi.fn() },
     getURL: vi.fn((path: string) => `chrome-extension://fake-id/${path}`),
+};
+
+const chromeAction = {
+    setBadgeText: vi.fn().mockResolvedValue(undefined),
+    setBadgeBackgroundColor: vi.fn().mockResolvedValue(undefined),
 };
 
 const chromeTabs = {
@@ -53,9 +73,10 @@ const chromeTabs = {
 // Assign to globalThis so extension code can reference `chrome.*`
 Object.defineProperty(globalThis, "chrome", {
     value: {
-        storage: { local: chromeStorageLocal },
+        storage: { local: chromeStorageLocal, session: chromeStorageSession },
         runtime: chromeRuntime,
         tabs: chromeTabs,
+        action: chromeAction,
     },
     writable: true,
     configurable: true,
@@ -92,13 +113,19 @@ if (typeof window !== "undefined") {
 
 export function resetChromeStorage() {
     for (const key of Object.keys(storageData)) delete storageData[key];
+    for (const key of Object.keys(sessionData)) delete sessionData[key];
     chromeStorageLocal.get.mockClear();
     chromeStorageLocal.set.mockClear();
     chromeStorageLocal.remove.mockClear();
+    chromeStorageSession.get.mockClear();
+    chromeStorageSession.set.mockClear();
+    chromeAction.setBadgeText.mockClear();
+    chromeAction.setBadgeBackgroundColor.mockClear();
+    chromeRuntime.sendMessage.mockClear();
 }
 
 export function setChromeStorageData(data: Record<string, unknown>) {
     Object.assign(storageData, data);
 }
 
-export { chromeStorageLocal, chromeRuntime, chromeTabs };
+export { chromeStorageLocal, chromeStorageSession, chromeRuntime, chromeTabs, chromeAction };

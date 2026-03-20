@@ -7,6 +7,7 @@ dist/
 coverage/
 .coverage
 
+
 # playwright output
 test-results/
 playwright-report/

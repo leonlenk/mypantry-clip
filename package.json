@@ -10,7 +10,7 @@
         "ext:build": "pnpm --filter mypantry build",
         "ext:test": "pnpm --filter mypantry test:unit",
         "ext:coverage": "pnpm --filter mypantry test:coverage",
-        "coverage": "pnpm run api:coverage; pnpm run ext:coverage",
+        "coverage": "node scripts/run-coverage.mjs",
         "ext:test:e2e": "node scripts/build-ext-if-stale.mjs && pnpm --filter mypantry test:e2e",
         "ext:e2e:report": "pnpm --filter mypantry exec playwright show-report ../../coverage/e2e/html",
         "ext:test:firefox": "pnpm --filter mypantry test:firefox",

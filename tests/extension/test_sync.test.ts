@@ -214,6 +214,112 @@ describe("syncBatchToCloud", () => {
 });
 
 // ---------------------------------------------------------------------------
+// syncRecipeToCloud — non-ok response path
+// ---------------------------------------------------------------------------
+
+describe("syncRecipeToCloud — non-ok response", () => {
+    it("logs a warning but does not throw on non-ok response", async () => {
+        setChromeStorageData({
+            supabaseToken: "token",
+            llmProvider: "google",
+            apiUrl: "https://api.example.com",
+        });
+
+        vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+            ok: false,
+            status: 500,
+            text: async () => "Internal Server Error",
+        }));
+
+        // Should resolve without throwing
+        await expect(
+            syncModule.syncRecipeToCloud({
+                id: "r1", url: "u", title: "t", description: "", servings: 1,
+                ingredients: [], instructions: [],
+            } as any)
+        ).resolves.toBeUndefined();
+
+        vi.unstubAllGlobals();
+    });
+});
+
+// ---------------------------------------------------------------------------
+// syncBatchToCloud — non-ok and no-token paths
+// ---------------------------------------------------------------------------
+
+describe("syncBatchToCloud — no token (BYOK)", () => {
+    it("no-ops when not authenticated", async () => {
+        setChromeStorageData({ llmProvider: "anthropic" });
+
+        const fetchMock = vi.fn();
+        vi.stubGlobal("fetch", fetchMock);
+
+        await syncModule.syncBatchToCloud([
+            { id: "r1", url: "u", title: "A", description: "", servings: 1, ingredients: [], instructions: [] } as any,
+        ]);
+        expect(fetchMock).not.toHaveBeenCalled();
+
+        vi.unstubAllGlobals();
+    });
+
+    it("does not throw on network error", async () => {
+        setChromeStorageData({
+            supabaseToken: "token",
+            llmProvider: "google",
+            apiUrl: "https://api.example.com",
+        });
+
+        vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network error")));
+
+        await expect(
+            syncModule.syncBatchToCloud([
+                { id: "r1", url: "u", title: "A", description: "", servings: 1, ingredients: [], instructions: [] } as any,
+            ])
+        ).resolves.toBeUndefined();
+
+        vi.unstubAllGlobals();
+    });
+});
+
+// ---------------------------------------------------------------------------
+// deleteRecipeFromCloud — non-ok response
+// ---------------------------------------------------------------------------
+
+describe("deleteRecipeFromCloud — non-ok response", () => {
+    it("logs a warning but does not throw on non-ok delete response", async () => {
+        setChromeStorageData({
+            supabaseToken: "token",
+            llmProvider: "google",
+            apiUrl: "https://api.example.com",
+        });
+
+        vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+            ok: false,
+            status: 404,
+            text: async () => "Not Found",
+        }));
+
+        await expect(syncModule.deleteRecipeFromCloud("missing-id")).resolves.toBeUndefined();
+
+        vi.unstubAllGlobals();
+    });
+
+    it("does not throw on network error during delete", async () => {
+        setChromeStorageData({
+            supabaseToken: "token",
+            llmProvider: "google",
+            apiUrl: "https://api.example.com",
+        });
+
+        vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("connection refused")));
+
+        await expect(syncModule.deleteRecipeFromCloud("r1")).resolves.toBeUndefined();
+
+        vi.unstubAllGlobals();
+    });
+});
+
+// ---------------------------------------------------------------------------
 // getCloudLatestTimestamp
 // ---------------------------------------------------------------------------
 
@@ -256,6 +362,91 @@ describe("getCloudLatestTimestamp", () => {
 
         const result = await syncModule.getCloudLatestTimestamp();
         expect(result).toBeNull();
+
+        vi.unstubAllGlobals();
+    });
+});
+
+// ---------------------------------------------------------------------------
+// syncAllFromCloud
+// ---------------------------------------------------------------------------
+
+describe("syncAllFromCloud", () => {
+    it("returns empty array when not authenticated", async () => {
+        setChromeStorageData({ llmProvider: "anthropic" });
+        const result = await syncModule.syncAllFromCloud();
+        expect(result).toEqual([]);
+    });
+
+    it("returns recipes from the cloud (full sync)", async () => {
+        setChromeStorageData({
+            supabaseToken: "token",
+            llmProvider: "google",
+            apiUrl: "https://api.example.com",
+        });
+
+        const fakeRecipe = { id: "r1", title: "Soup" };
+        vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+            ok: true,
+            json: async () => ({
+                recipes: [{ id: "r1", recipe_json: fakeRecipe, updated_at: "2026-03-01" }],
+            }),
+        }));
+
+        const result = await syncModule.syncAllFromCloud();
+        expect(result).toHaveLength(1);
+        expect(result[0]).toEqual(fakeRecipe);
+
+        vi.unstubAllGlobals();
+    });
+
+    it("passes the 'since' param to the API URL", async () => {
+        setChromeStorageData({
+            supabaseToken: "token",
+            llmProvider: "google",
+            apiUrl: "https://api.example.com",
+        });
+
+        const fetchMock = vi.fn().mockResolvedValue({
+            ok: true,
+            json: async () => ({ recipes: [] }),
+        });
+        vi.stubGlobal("fetch", fetchMock);
+
+        await syncModule.syncAllFromCloud("2026-01-01T00:00:00Z");
+
+        const [url] = fetchMock.mock.calls[0];
+        expect(url).toContain("since=");
+
+        vi.unstubAllGlobals();
+    });
+
+    it("returns empty array on non-ok response", async () => {
+        setChromeStorageData({
+            supabaseToken: "token",
+            llmProvider: "google",
+            apiUrl: "https://api.example.com",
+        });
+
+        vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 500 }));
+
+        const result = await syncModule.syncAllFromCloud();
+        expect(result).toEqual([]);
+
+        vi.unstubAllGlobals();
+    });
+
+    it("returns empty array on network error", async () => {
+        setChromeStorageData({
+            supabaseToken: "token",
+            llmProvider: "google",
+            apiUrl: "https://api.example.com",
+        });
+
+        vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("offline")));
+
+        const result = await syncModule.syncAllFromCloud();
+        expect(result).toEqual([]);
 
         vi.unstubAllGlobals();
     });
