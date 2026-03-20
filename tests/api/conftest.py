@@ -28,7 +28,9 @@ _ENV_OVERRIDES = {
     "GEMINI_API_KEY": "fake-gemini-key",
     "EXTENSION_ID": "fake-extension-id",
     "MAX_PAYLOAD_CHARS": "200",
+    "EXTRACT_DAILY_LIMIT": "3",
     "EXTRACT_WEEKLY_LIMIT": "5",
+    "SUBSTITUTE_DAILY_LIMIT": "3",
     "SUBSTITUTE_WEEKLY_LIMIT": "5",
 }
 

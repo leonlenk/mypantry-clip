@@ -26,7 +26,7 @@ def substitute_endpoint(request: SubstituteRequest, user_id: str = Depends(verif
             detail=f"Payload too large ({payload_size:,} chars). Maximum is {max_chars:,} characters."
         )
 
-    check_rate_limit_and_telemetry(user_id=user_id, endpoint="substitute", limit=settings.substitute_weekly_limit)
+    check_rate_limit_and_telemetry(user_id=user_id, endpoint="substitute", daily_limit=settings.substitute_daily_limit, weekly_limit=settings.substitute_weekly_limit)
     
     try:
         sub = get_substitution(request.recipe_context, request.target_ingredient)

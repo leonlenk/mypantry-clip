@@ -24,7 +24,7 @@ def extract_endpoint(request: ExtractRequest, user_id: str = Depends(verify_jwt)
             detail=f"Payload too large ({len(request.payload):,} chars). Maximum is {max_chars:,} characters."
         )
 
-    check_rate_limit_and_telemetry(user_id=user_id, endpoint="extract", limit=settings.extract_weekly_limit)
+    check_rate_limit_and_telemetry(user_id=user_id, endpoint="extract", daily_limit=settings.extract_daily_limit, weekly_limit=settings.extract_weekly_limit)
 
     try:
         recipe = extract_recipe(request.payload)

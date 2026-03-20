@@ -13,6 +13,7 @@ import {
     extractTextFromResult,
     extractJsonObject,
     getApiBase,
+    parseCloudApiError,
     type ExtractionResult,
 } from "./llmClient";
 
@@ -183,16 +184,10 @@ Extract the recipe into the specified JSON format.
             });
 
             if (!response.ok) {
-                const errText = await response.text();
                 if (response.status === 401) {
                     throw new Error("Session expired. Please sign out and sign in again to continue.");
                 }
-                if (response.status === 413) {
-                    throw new Error(
-                        "Payload too large. The page content exceeds 20,000 characters after cleanup. Try a page with a dedicated recipe card."
-                    );
-                }
-                throw new Error(`Cloud API Error (${response.status}): ${errText}`);
+                throw await parseCloudApiError(response);
             }
 
             const cloudData = await response.json();

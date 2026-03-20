@@ -10,7 +10,9 @@ class Settings(BaseSettings):
     gemini_api_key: str
     extension_id: str
     max_payload_chars: int = 20_000
+    extract_daily_limit: int = 15
     extract_weekly_limit: int = 50
+    substitute_daily_limit: int = 15
     substitute_weekly_limit: int = 50
     public_base_url: str = "https://mypantry.dev"
     share_expiry_days: int = 30

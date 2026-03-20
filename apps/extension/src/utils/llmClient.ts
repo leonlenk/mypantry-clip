@@ -181,6 +181,47 @@ export function extractTextFromResult(result: any, provider: string): string {
 }
 
 /** Extracts and parses the first JSON object found in a text string. */
+/**
+ * Parses a failed cloud API response into a user-friendly error message.
+ * Handles 413 (payload too large) and 429 (rate limit) with reset time.
+ */
+export async function parseCloudApiError(response: Response): Promise<Error> {
+    if (response.status === 413) {
+        return new Error(
+            "Payload too large. The page content exceeds the limit after cleanup. Try a page with a dedicated recipe card."
+        );
+    }
+    if (response.status === 429) {
+        try {
+            const body = await response.json();
+            const resetAt: number | undefined = body?.detail?.reset_at;
+            if (resetAt) {
+                const resetDate = new Date(resetAt * 1000);
+                const now = Date.now();
+                const diffMs = resetAt * 1000 - now;
+                let resetStr: string;
+                if (diffMs <= 0) {
+                    resetStr = "shortly";
+                } else if (diffMs < 60 * 60 * 1000) {
+                    const mins = Math.ceil(diffMs / 60000);
+                    resetStr = `in ${mins} minute${mins === 1 ? "" : "s"}`;
+                } else if (diffMs < 24 * 60 * 60 * 1000) {
+                    const hrs = Math.ceil(diffMs / 3600000);
+                    resetStr = `in ${hrs} hour${hrs === 1 ? "" : "s"}`;
+                } else {
+                    resetStr = `on ${resetDate.toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" })}`;
+                }
+                return new Error(`Weekly limit reached. Your quota resets ${resetStr}.`);
+            }
+        } catch {
+            // fall through to generic message
+        }
+        return new Error("Weekly limit reached. Please try again next week.");
+    }
+    const errText = await response.text().catch(() => "");
+    return new Error(`Cloud API Error (${response.status}): ${errText}`);
+}
+
 export function extractJsonObject(text: string): any {
     const firstBrace = text.indexOf("{");
     const lastBrace = text.lastIndexOf("}");

@@ -6,7 +6,7 @@
  */
 
 import type { Recipe } from "../types/recipe";
-import { buildByokRequestConfig, callLlm, extractTextFromResult, extractJsonObject, getApiBase } from "./llmClient";
+import { buildByokRequestConfig, callLlm, extractTextFromResult, extractJsonObject, getApiBase, parseCloudApiError } from "./llmClient";
 
 declare const chrome: any;
 
@@ -95,8 +95,7 @@ Provide the precise JSON response.
             });
 
             if (!response.ok) {
-                const errText = await response.text();
-                throw new Error(`Cloud API Error (${response.status}): ${errText}`);
+                throw await parseCloudApiError(response);
             }
 
             const cloudData = await response.json();
