@@ -18,5 +18,19 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pytest>=8.0",
+    "pytest-cov>=6.0",
     "httpx>=0.28.0",
 ]
+
+[tool.coverage.run]
+source = ["src"]
+omit = ["src/main.py"]
+
+[tool.coverage.report]
+show_missing = true
+
+[tool.coverage.html]
+directory = "../../coverage/api/html"
+
+[tool.coverage.lcov]
+output = "../../coverage/api/lcov.info"

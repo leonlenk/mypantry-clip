@@ -4,6 +4,8 @@ CLAUDE.md
 
 # build output
 dist/
+coverage/
+.coverage
 
 # playwright output
 test-results/

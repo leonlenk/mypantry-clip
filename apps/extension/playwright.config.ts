@@ -9,7 +9,10 @@ export default defineConfig({
     // so tests are fully independent and can run in parallel.
     fullyParallel: true,
     workers: process.env.CI ? 2 : 4,
-    reporter: "list",
+    reporter: [
+        ["list"],
+        ["html", { outputFolder: "../../coverage/e2e/html", open: "never" }],
+    ],
 
     // Each project maps to one page/feature area so you can run them independently:
     //   pnpm exec playwright test --project=pantry
