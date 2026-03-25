@@ -10,6 +10,16 @@ import feather from "feather-icons";
 import { formatTime } from "../../utils/conversions";
 import type { Recipe } from "../../types/recipe";
 
+/**
+ * Strips the WordPress dimension suffix from image URLs to get the full-size
+ * original upload instead of a resized thumbnail.
+ *   e.g. /image-700x467.jpg  →  /image.jpg
+ * Non-WordPress URLs (no matching suffix) are returned unchanged.
+ */
+export function upgradeWordPressImageUrl(url: string): string {
+    return url.replace(/-\d{2,5}x\d{2,5}(\.[a-zA-Z0-9]{2,5})$/, "$1");
+}
+
 /** Guard: feather-icons will throw if the icon name doesn't exist. */
 function safeIcon(
     name: string,
@@ -92,7 +102,13 @@ export function buildRecipeCardHtml(recipe: Recipe): string {
         ? safeIcon("star", { width: 18, height: 18, fill: "currentColor" })
         : safeIcon("star", { width: 18, height: 18 });
 
+    const bgHiresUrl = recipe.image ? upgradeWordPressImageUrl(recipe.image) : "";
+    const bgHtml = recipe.image
+        ? `<div class="large-card-bg"><img src="${recipe.image}" alt="" loading="lazy"${bgHiresUrl !== recipe.image ? ` data-hires="${bgHiresUrl}"` : ""} /></div>`
+        : "";
+
     return `
+        ${bgHtml}
         <div class="card-header">
             <h3 title="${recipe.title}">${recipe.title}</h3>
             <div class="card-actions">
@@ -142,8 +158,9 @@ export function buildMediumCardHtml(recipe: Recipe): string {
     const visibleTagsHtml = sortedTags.slice(0, MAX_TAGS).map((t) => `<span class="tag">${t}</span>`).join("");
     const overflowChip = buildOverflowChip(sortedTags.slice(MAX_TAGS));
 
+    const hiresUrl = recipe.image ? upgradeWordPressImageUrl(recipe.image) : "";
     const imageHtml = recipe.image
-        ? `<div class="medium-card-image"><img src="${recipe.image}" alt="${recipe.title} cover" loading="lazy" /></div>`
+        ? `<div class="medium-card-image"><img src="${recipe.image}" alt="${recipe.title} cover" loading="lazy"${hiresUrl !== recipe.image ? ` data-hires="${hiresUrl}"` : ""} /></div>`
         : "";
 
     return `

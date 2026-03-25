@@ -155,10 +155,7 @@ export function renderRecipes(recipes: Recipe[]) {
         } else if (pantryState.currentViewMode === "medium") {
             card.innerHTML = buildMediumCardHtml(recipe);
         } else {
-            if (recipe.image) {
-                card.classList.add("has-image");
-                card.style.setProperty("--card-image-url", `url("${recipe.image}")`);
-            }
+            if (recipe.image) card.classList.add("has-image");
             card.innerHTML = buildRecipeCardHtml(recipe);
         }
 
@@ -186,6 +183,18 @@ export function renderRecipes(recipes: Recipe[]) {
 // ─── Card event wiring ────────────────────────────────────────────────────────
 
 export function wireCardEvents(card: HTMLElement, recipe: Recipe) {
+    // Progressive image upgrade: thumbnail loads first (via loading="lazy"), then
+    // the full-size hires version is prefetched and swapped in seamlessly.
+    card.querySelectorAll<HTMLImageElement>("img[data-hires]").forEach((img) => {
+        const swap = () => {
+            const hi = new Image();
+            hi.onload = () => { img.src = hi.src; };
+            hi.src = img.dataset.hires!;
+        };
+        if (img.complete && img.naturalWidth > 0) swap();
+        else img.addEventListener("load", swap, { once: true });
+    });
+
     // Chrome suppresses `click` when Ctrl is held in an extension popup;
     // catch it in mousedown and skip the click handler via a flag.
     let pendingCtrlClick = false;
