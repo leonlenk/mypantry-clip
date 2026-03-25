@@ -30,7 +30,11 @@ class Settings(BaseSettings):
     jwt_audience: str = "authenticated"
 
     model_config = SettingsConfigDict(
-        env_file=os.environ.get("ENV_FILE", ".env"),
+        env_file=(
+            (".env", os.environ["ENV_FILE"])
+            if os.environ.get("ENV_FILE") and os.environ["ENV_FILE"] != ".env"
+            else ".env"
+        ),
         env_file_encoding="utf-8",
         extra="ignore",
     )

@@ -2,7 +2,7 @@
     "name": "mypantry",
     "private": true,
     "scripts": {
-        "dev": "cd apps/api && uv run uvicorn main:app --reload --port 8000",
+        "dev": "cd apps/api && ENV_FILE=.env.dev uv run uvicorn main:app --reload --port 8000",
         "dev:test": "npx concurrently -n api,ext -c cyan,magenta \"cd apps/api && ENV_FILE=.env.test uv run uvicorn main:app --reload --port 8000\" \"pnpm --filter mypantry test:chromium:test\"",
         "build": "pnpm --filter mypantry build",
         "zip": "pnpm --filter mypantry zip",
