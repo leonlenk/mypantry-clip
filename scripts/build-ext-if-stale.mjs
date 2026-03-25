@@ -35,7 +35,7 @@ function newestMtime(dir) {
 
 if (!existsSync(DIST_SENTINEL)) {
     console.log("dist/ not found — building extension...");
-    execSync("pnpm run ext:build", { stdio: "inherit" });
+    execSync("pnpm run build", { stdio: "inherit" });
     process.exit(0);
 }
 
@@ -55,7 +55,7 @@ for (const file of WATCH_FILES) {
 
 if (srcNewest > distMtime) {
     console.log("Extension sources changed — rebuilding...");
-    execSync("pnpm run ext:build", { stdio: "inherit" });
+    execSync("pnpm run build", { stdio: "inherit" });
 } else {
     console.log("Extension is up to date, skipping build.");
 }

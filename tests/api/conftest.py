@@ -77,7 +77,7 @@ def app():
 def client(app):
     """HTTPX TestClient wrapping the live FastAPI app."""
     from fastapi.testclient import TestClient
-    return TestClient(app)
+    return TestClient(app, headers={"Origin": "http://localhost"})
 
 
 # ---------------------------------------------------------------------------

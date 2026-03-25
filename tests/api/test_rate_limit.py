@@ -168,18 +168,27 @@ class TestWeeklyTier:
         assert "weekly" in exc_info.value.detail["message"].lower()
 
     def test_weekly_retry_after_longer_than_daily(self, _patch_env, mock_redis):
-        """Weekly Retry-After is longer than daily Retry-After (different window sizes)."""
+        """Weekly Retry-After is longer than daily Retry-After (different window sizes).
+
+        Pin time to day 1 of week 0 (now=86400) so both windows are clearly mid-week:
+          daily_retry  = 86400  (full day remaining)
+          weekly_retry = 518400 (6 days remaining)
+        Without pinning, this fails on the last day of any weekly window because
+        the daily and weekly resets coincide (7 days = 7 × 1 day).
+        """
         from src.dependencies.rate_limit import check_rate_limit_and_telemetry
 
-        mock_redis.incr.side_effect = _incr_sequence(10, 4)  # daily breach
-        with pytest.raises(HTTPException) as daily_exc:
-            check_rate_limit_and_telemetry(user_id="u1", endpoint="extract", daily_limit=3, weekly_limit=5)
-        daily_retry = int(daily_exc.value.headers["Retry-After"])
+        fixed_now = 86400  # start of day 1, well within week 0
+        with patch("src.dependencies.rate_limit.time.time", return_value=fixed_now):
+            mock_redis.incr.side_effect = _incr_sequence(10, 4)  # daily breach
+            with pytest.raises(HTTPException) as daily_exc:
+                check_rate_limit_and_telemetry(user_id="u1", endpoint="extract", daily_limit=3, weekly_limit=5)
+            daily_retry = int(daily_exc.value.headers["Retry-After"])
 
-        mock_redis.incr.side_effect = _incr_sequence(10, 2, 6)  # weekly breach
-        with pytest.raises(HTTPException) as weekly_exc:
-            check_rate_limit_and_telemetry(user_id="u1", endpoint="extract", daily_limit=3, weekly_limit=5)
-        weekly_retry = int(weekly_exc.value.headers["Retry-After"])
+            mock_redis.incr.side_effect = _incr_sequence(10, 2, 6)  # weekly breach
+            with pytest.raises(HTTPException) as weekly_exc:
+                check_rate_limit_and_telemetry(user_id="u1", endpoint="extract", daily_limit=3, weekly_limit=5)
+            weekly_retry = int(weekly_exc.value.headers["Retry-After"])
 
         assert weekly_retry > daily_retry
 
