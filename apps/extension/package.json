@@ -16,7 +16,7 @@
     "test:e2e": "playwright test",
     "test:firefox": "pnpm run build && NODE_OPTIONS=--no-deprecation web-ext run -t firefox-desktop -s dist",
     "test:chromium": "pnpm run build && NODE_OPTIONS=--no-deprecation web-ext run -t chromium -s dist",
-    "test:chromium:test": "astro build --mode test && esbuild src/background.ts --bundle --format=esm --outfile=dist/background.js && esbuild src/content.ts --bundle --format=esm --outfile=dist/content.js && NODE_OPTIONS=--no-deprecation web-ext run -t chromium -s dist",
+    "test:chromium:test": "astro build --mode dev && esbuild src/background.ts --bundle --format=esm --outfile=dist/background.js && esbuild src/content.ts --bundle --format=esm --outfile=dist/content.js && NODE_OPTIONS=--no-deprecation web-ext run -t chromium -s dist",
     "zip": "pnpm run build && zip -r my-pantry.zip dist/"
   },
   "dependencies": {
