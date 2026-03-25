@@ -1,11 +1,54 @@
 @use 'components';
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Quicksand:wght@400;500;600&display=swap');
 
+// ── Dark theme variable overrides ─────────────────────────────────────────────
+@mixin dark-theme-vars {
+  --color-bg: #1A1714;
+  --color-surface: #24201C;
+  --color-border: #3D3730;
+  --color-text: #E8E3D9;
+  --color-text-muted: #C4B8A8;
+  --color-text-meta: #9A8D7E;
+  --color-accent: #C48E72;
+  --color-accent-hover: #D59F83;
+  --color-accent-text: #C48E72;
+  --color-surface-rgb: 36, 32, 28;
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+  // Semantic overrides for dark backgrounds
+  --color-surface-hover-xs: rgba(196, 184, 168, 0.05);
+  --color-surface-hover: rgba(196, 184, 168, 0.08);
+  --color-accent-ring: rgba(196, 142, 114, 0.2);
+  --color-overlay-xs: rgba(255, 255, 255, 0.04);
+  // Card elevation — no border in dark mode (avoids sub-pixel sheen at rounded corners);
+  // definition comes from the shadow + surface gradient contrast instead.
+  --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.55), 0 3px 10px rgba(0, 0, 0, 0.35);
+  --card-shadow-hover: 0 8px 28px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(196, 142, 114, 0.3);
+  --card-border-color: #1A1714;
+  --card-border-hover: rgba(196, 142, 114, 0.45);
+  // Bulk action bar (inverted pill — needs its own tokens so it stays dark in dark mode)
+  --bulk-bar-bg: #2C2822;
+  --bulk-bar-border: #47403A;
+  --bulk-bar-fg: #E8E3D9;
+  --bulk-bar-btn-bg: #3C362F;
+  --bulk-bar-btn-fg: #E8E3D9;
+  --card-image-bg: #2a2520;
+  --card-image-overlay: linear-gradient(
+    to bottom,
+    rgba(26, 23, 20, 0.95) 0%,
+    rgba(26, 23, 20, 0.88) 35%,
+    rgba(36, 32, 28, 0.78) 100%
+  );
+  --color-tag-border: rgba(196, 142, 114, 0.22);
+  --color-tag-hover-bg: rgba(196, 142, 114, 0.14);
+  --bg-gradient: radial-gradient(ellipse at top right, rgba(196, 142, 114, 0.07) 0%, transparent 55%);
+}
+
 :root {
   --font-serif: 'Fraunces', serif;
   --font-sans: 'Quicksand', sans-serif;
 
-  // MyPantry BRAND PALETTE (architecture.md)
+  // MyPantry BRAND PALETTE
   --color-bg: #FDFBF7;
   /* Vanilla Cream */
   --color-surface: #F4EFE6;
@@ -20,13 +63,44 @@
   /* Warm Brown (Tertiary) – 5.0:1 on bg */
   --color-accent: #E5B299;
   /* Warm Apricot (Accent) */
-  --color-accent-hover: #D69E83; // Slightly darker for hover state
+  --color-accent-hover: #D69E83;
   --color-accent-text: #8B5E3C;
   /* Dark Amber – used when accent appears as text (5.4:1 on bg) */
-  --color-on-accent: var(--color-on-accent);
-  /* Dark Espresso – text/icons placed on top of accent-colored backgrounds */
+  --color-on-accent: #3B2A1A;
+  /* Dark Espresso – text/icons on accent-coloured backgrounds */
 
   --color-surface-rgb: 244, 239, 230;
+
+  // Semantic utility colours (hardcoded values live here, not in components)
+  --color-danger: #ef4444;
+  --color-danger-bg: rgba(239, 68, 68, 0.1);
+  --color-danger-hover-bg: rgba(239, 68, 68, 0.08);
+  --color-surface-hover-xs: rgba(139, 115, 85, 0.05);
+  --color-surface-hover: rgba(139, 115, 85, 0.08);
+  --color-accent-ring: rgba(200, 145, 111, 0.1);
+  --color-overlay-xs: rgba(0, 0, 0, 0.02);
+
+  // Card elevation & theming
+  --card-shadow: none;
+  --card-shadow-hover: none;
+  --card-border-color: var(--color-border);
+  --card-border-hover: rgba(139, 115, 85, 0.35);
+  // Bulk action bar
+  --bulk-bar-bg: var(--color-text);
+  --bulk-bar-border: var(--color-text);
+  --bulk-bar-fg: var(--color-surface);
+  --bulk-bar-btn-bg: var(--color-surface);
+  --bulk-bar-btn-fg: var(--color-text);
+  --card-image-bg: #e8e2d9;
+  --card-image-overlay: linear-gradient(
+    to bottom,
+    rgba(253, 251, 247, 0.95) 0%,
+    rgba(253, 251, 247, 0.88) 35%,
+    rgba(244, 239, 230, 0.78) 100%
+  );
+  --color-tag-border: rgba(139, 115, 85, 0.15);
+  --color-tag-hover-bg: rgba(139, 115, 85, 0.15);
+  --bg-gradient: radial-gradient(circle at top right, rgba(139, 115, 85, 0.04) 0%, transparent 40%);
 
   --spacing-xs: 0.25rem;
   --spacing-sm: 0.5rem;
@@ -42,23 +116,16 @@
   --shadow-md: 0 4px 12px rgba(74, 64, 54, 0.08);
 }
 
+// System preference (only when no explicit override is set)
 @media (prefers-color-scheme: dark) {
-  :root {
-    --color-bg: #1A1714;
-    --color-surface: #24201C;
-    --color-border: #3A342D;
-    --color-text: #E8E3D9;
-    --color-text-muted: #C4B8A8;
-    --color-text-meta: #9A8D7E;
-    /* Slightly lighter than before – 5.6:1 on dark bg */
-    --color-accent: #C48E72;
-    --color-accent-hover: #D59F83;
-    --color-accent-text: #C48E72;
-    /* Same as accent – already 6.4:1 on dark bg */
-    --color-surface-rgb: 36, 32, 28;
-    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  :root:not([data-theme="light"]) {
+    @include dark-theme-vars;
   }
+}
+
+// Explicit dark mode toggle (overrides system preference)
+[data-theme="dark"] {
+  @include dark-theme-vars;
 }
 
 * {
