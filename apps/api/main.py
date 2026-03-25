@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, APIRouter, Request, Response
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from src.utils.logger import setup_logging
@@ -13,6 +13,20 @@ import uvicorn
 import os
 
 setup_logging()
+
+
+class WwwRedirectMiddleware(BaseHTTPMiddleware):
+    """301 redirect www.mypantry.dev → mypantry.dev for SEO canonicalization."""
+
+    async def dispatch(self, request: Request, call_next) -> Response:
+        host = request.headers.get("host", "")
+        if host.startswith("www."):
+            non_www = host[4:]  # strip "www."
+            target = f"https://{non_www}{request.url.path}"
+            if request.url.query:
+                target += f"?{request.url.query}"
+            return RedirectResponse(url=target, status_code=301)
+        return await call_next(request)
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -100,6 +114,7 @@ app.add_middleware(
 )
 app.add_middleware(OriginValidationMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(WwwRedirectMiddleware)
 
 api_router = APIRouter(prefix="/api")
 api_router.include_router(extract.router)
