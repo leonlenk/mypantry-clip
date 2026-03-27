@@ -33,7 +33,7 @@ A privacy-first, hybrid-architecture recipe assistant. The project is structured
 * **The Onboarding Flow (Setup Page):** An Astro page triggered by `chrome.runtime.onInstalled` guiding the user to create an account, input an API key/password, and select their vector database preference.
 * **Cold Start UX:** The UI must handle the initial 22MB `Transformers.js` model download gracefully. Implement a dedicated loading state/progress bar that listens to the pipeline's progress callback so the user knows the AI model is caching locally.
 * **Data Escape Hatch:** The settings page must include an "Export to JSON" and "Import from JSON" button that allows the user to export and import their entire local `IndexedDB` recipe database, ensuring true data ownership.
-* **The Action Panel (Popup):** A lightweight Astro UI for capturing the page and querying substitutions. This should be called Pantry Clip.
+* **The Action Panel (Popup):** A lightweight Astro UI for capturing the page and querying substitutions. This should be called MyPantry Clip.
 * **The Pantry (Dashboard):** An internal `chrome://` full-tab extension page for viewing saved recipes and performing semantic searches.
 
 ## 6. Agentic Workflows & Edge Optimizations
@@ -48,9 +48,9 @@ A privacy-first, hybrid-architecture recipe assistant. The project is structured
 * **ISOLATION:** Keep SCSS styling modular and scoped to prevent CSS bleed. Maintain a strict separation of concerns between the client logic and the Python API router.
 
 ## 8. Brand Identity & Naming
-* **Primary Brand:** MyPantry
+* **Primary Brand:** MyPantry Clip
 * **Domain:** mypantry.dev
-* **Extension Name:** Pantry Clip
+* **Extension Name:** MyPantry Clip
 * **UI Voice:** Minimalist, utility-focused, "Engineering-chic" (using monospace fonts for data/vectors).
 * **Visual Strategy:** SCSS variables should favor a "NYT Cooking" palette.
 

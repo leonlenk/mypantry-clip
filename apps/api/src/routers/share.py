@@ -8,7 +8,7 @@ POST /api/share  — Authenticated. Accepts a batch of recipe objects, strips
 GET  /s/{id}     — Public (no auth). Serves either:
                      - A single full recipe card  (1 recipe in the batch)
                      - A "mini pantry" grid view  (2+ recipes in the batch)
-                   Both views include a "Save to MyPantry" button wired to the
+                   Both views include a "Save to MyPantry Clip" button wired to the
                    extension's content script via window.postMessage.
 """
 
@@ -260,17 +260,17 @@ def _page_shell(
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex, nofollow">
-  <title>{_esc(title)} | MyPantry</title>
+  <title>{_esc(title)} | MyPantry Clip</title>
   <link rel="canonical" href="{canonical}">
   {desc_tag}
-  <meta property="og:title" content="{_esc(title)} | MyPantry">
+  <meta property="og:title" content="{_esc(title)} | MyPantry Clip">
   <meta property="og:description" content="{_esc(description) if description else 'A recipe shared via MyPantry.'}">
   <meta property="og:url" content="{canonical}">
   <meta property="og:image" content="{og_image_abs}">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="MyPantry">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="{_esc(title)} | MyPantry">
+  <meta name="twitter:title" content="{_esc(title)} | MyPantry Clip">
   <meta name="twitter:image" content="{og_image_abs}">
   {_FONTS}
   <style>{_BASE_CSS}{extra_css}</style>
@@ -369,7 +369,7 @@ def _render_single_recipe_page(recipe: dict[str, Any], expiry_days: int, share_i
     nav_right = (
         '<button class="save-btn" id="save-btn">'
         '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>'
-        'Save to MyPantry</button>'
+        'Save to MyPantry Clip</button>'
     )
 
     body = f"""<main class="page">
@@ -442,7 +442,7 @@ def _render_mini_card(recipe: dict[str, Any], index: int) -> str:
     {chips_html}
     {meta_html}
     <button class="save-btn card-save-btn" id="save-btn-{index}" data-index="{index}">
-      Save to MyPantry
+      Save to MyPantry Clip
     </button>
   </div>
 </div>"""
@@ -555,7 +555,7 @@ def _save_js_single() -> str:
         setSavedUI();
       } else {
         saveBtn.disabled = false;
-        saveBtn.textContent = 'Save to MyPantry';
+        saveBtn.textContent = 'Save to MyPantry Clip';
       }
     });
   }
@@ -629,7 +629,7 @@ def _save_js_multi() -> str:
     var btn = document.getElementById('save-btn-' + idx);
     if (!btn) return;
     btn.disabled = false;
-    btn.textContent = 'Save to MyPantry';
+    btn.textContent = 'Save to MyPantry Clip';
   }
 
   // ── Result listener ───────────────────────────────────────────────────────
@@ -735,7 +735,7 @@ def _render_404() -> str:
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex, nofollow">
-  <title>Recipe Not Found | MyPantry</title>
+  <title>Recipe Not Found | MyPantry Clip</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,700;1,400&family=Quicksand:wght@400;500;600&display=swap" rel="stylesheet">
   <style>

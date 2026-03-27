@@ -18,5 +18,5 @@ class TestAuthCallback:
         """The callback page includes MyPantry branding."""
         resp = client.get("/api/auth/callback")
         body = resp.text
-        assert "MyPantry" in body
+        assert "MyPantry Clip" in body
         assert "Completing login" in body or "login" in body.lower()

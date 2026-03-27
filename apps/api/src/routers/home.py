@@ -8,29 +8,28 @@ _HOME_HTML = """<!DOCTYPE html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pantry Clip – MyPantry</title>
-    <meta name="description" content="Pantry Clip is a privacy-first, secure Chrome extension that extracts perfectly formatted recipes from any website and lets you search your personal cookbook semantically.">
+    <title>MyPantry Clip</title>
+    <meta name="description" content="MyPantry Clip is a privacy-first, secure Chrome extension that extracts perfectly formatted recipes from any website and lets you search your personal cookbook semantically.">
     <link rel="canonical" href="https://mypantry.dev/">
     <meta name="theme-color" content="#4A4036">
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
     <link rel="icon" type="image/x-icon" sizes="32x32" href="/static/favicon.ico">
     <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
-    <meta property="og:title" content="Pantry Clip – MyPantry">
-    <meta property="og:description" content="Pantry Clip is a privacy-first, secure Chrome extension that extracts perfectly formatted recipes from any website and lets you search your personal cookbook semantically.">
+    <meta property="og:title" content="MyPantry Clip">
+    <meta property="og:description" content="MyPantry Clip is a privacy-first, secure Chrome extension that extracts perfectly formatted recipes from any website and lets you search your personal cookbook semantically.">
     <meta property="og:url" content="https://mypantry.dev/">
     <meta property="og:image" content="https://mypantry.dev/static/pantry_preview.png">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="MyPantry">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Pantry Clip – MyPantry">
-    <meta name="twitter:description" content="Pantry Clip is a privacy-first, secure Chrome extension that extracts perfectly formatted recipes from any website and lets you search your personal cookbook semantically.">
+    <meta name="twitter:title" content="MyPantry Clip">
+    <meta name="twitter:description" content="MyPantry Clip is a privacy-first, secure Chrome extension that extracts perfectly formatted recipes from any website and lets you search your personal cookbook semantically.">
     <meta name="twitter:image" content="https://mypantry.dev/static/pantry_preview.png">
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "SoftwareApplication",
-      "name": "Pantry Clip",
-      "alternateName": "MyPantry",
+      "name": "MyPantry Clip",
       "description": "A privacy-first Chrome extension that extracts perfectly formatted recipes from any website and lets you search your personal cookbook semantically.",
       "url": "https://mypantry.dev/",
       "applicationCategory": "UtilitiesApplication",
@@ -402,7 +401,7 @@ _HOME_HTML = """<!DOCTYPE html>
                     <path d="M3 11l19-9-9 19-2-8-8-2z"/>
                 </svg>
             </div>
-            <span class="brand-name">MyPantry</span>
+            <span class="brand-name">MyPantry Clip</span>
         </a>
         <nav class="nav-links">
             <a href="https://github.com/leonlenk/my-pantry" target="_blank" rel="noopener">GitHub</a>
@@ -414,7 +413,7 @@ _HOME_HTML = """<!DOCTYPE html>
     <main>
         <section class="hero">
             <h1>Save recipes instantly. <br>Find them magically.</h1>
-            <p>Pantry Clip is a privacy-first, secure Chrome extension that extracts perfectly formatted recipes from any website and lets you search your personal cookbook semantically.</p>
+            <p>MyPantry Clip is a privacy-first, secure Chrome extension that extracts perfectly formatted recipes from any website and lets you search your personal cookbook semantically.</p>
             
             <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem;">
                 <a href="https://chromewebstore.google.com/detail/my-pantry/hhaplljlbkgehhomjkjdnadbjpcahglo" target="_blank" rel="noopener" class="cta-button">
@@ -480,7 +479,7 @@ _HOME_HTML = """<!DOCTYPE html>
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6.364 6.364 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
                     </div>
                     <h3>Smart Extraction</h3>
-                    <p>Pantry Clip aggressively prunes the bloat from food blogs, extracting only the ingredients and instructions into clean, structured JSON.</p>
+                    <p>MyPantry Clip aggressively prunes the bloat from food blogs, extracting only the ingredients and instructions into clean, structured JSON.</p>
                     <div class="feature-tag">Structured Output</div>
                 </div>
             </div>
@@ -489,14 +488,14 @@ _HOME_HTML = """<!DOCTYPE html>
 
     <!-- Footer -->
     <footer>
-        <div class="footer-brand">MyPantry</div>
+        <div class="footer-brand">MyPantry Clip</div>
         <div class="footer-links">
             <a href="https://github.com/leonlenk/my-pantry" target="_blank" rel="noopener">GitHub</a>
             <a href="/privacy">Privacy Policy</a>
             <a href="mailto:support@mypantry.dev">Contact Support</a>
         </div>
         <div class="copyright">
-            &copy; 2026 MyPantry. Open source and privacy-first.
+            &copy; 2026 MyPantry Clip. Open source and privacy-first.
         </div>
     </footer>
 
@@ -507,7 +506,7 @@ _HOME_HTML = """<!DOCTYPE html>
 @router.get("/", response_class=HTMLResponse, include_in_schema=True)
 def homepage():
     """
-    Publicly accessible homepage for advertising the Pantry Clip extension.
+    Publicly accessible homepage for advertising the MyPantry Clip extension.
     - No authentication required.
     - Returns a fully self-contained HTML document styled with brand tokens.
     """

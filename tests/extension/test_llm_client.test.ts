@@ -149,7 +149,7 @@ describe("buildByokRequestConfig — openrouter", () => {
         const config = buildByokRequestConfig("openrouter", "some/model", "sk-or", "sys", "user");
         expect(config.url).toContain("openrouter.ai");
         expect(config.headers["Authorization"]).toBe("Bearer sk-or");
-        expect(config.headers["X-Title"]).toBe("Pantry Clip");
+        expect(config.headers["X-Title"]).toBe("MyPantry Clip");
         expect(config.body.messages[0].role).toBe("user");
     });
 });

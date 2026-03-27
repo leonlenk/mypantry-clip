@@ -94,7 +94,7 @@ export function buildByokRequestConfig(
                 "Content-Type": "application/json",
                 Authorization: `Bearer ${apiKey}`,
                 "HTTP-Referer": referer,
-                "X-Title": "Pantry Clip",
+                "X-Title": "MyPantry Clip",
             },
             body: {
                 model,

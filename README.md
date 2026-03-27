@@ -4,13 +4,13 @@
   </a>
 </div>
 
-# MyPantry
+# MyPantry Clip
 
-![MyPantry](https://img.shields.io/badge/Status-Active-success) ![License](https://img.shields.io/badge/License-MIT-blue.svg)
+![MyPantry Clip](https://img.shields.io/badge/Status-Active-success) ![License](https://img.shields.io/badge/License-MIT-blue.svg)
 
 **[Visit Our Homepage: mypantry.dev](https://mypantry.dev)**
 
-**MyPantry** (Extension Name: **Pantry Clip**) is a privacy-first recipe clipper and assistant. Clip any recipe from the web with one click, search your collection semantically, scale ingredients, convert units, and get AI-powered substitutions — all with your data stored locally on your device.
+**MyPantry Clip** is a privacy-first recipe clipper and assistant. Clip any recipe from the web with one click, search your collection semantically, scale ingredients, convert units, and get AI-powered substitutions — all with your data stored locally on your device.
 
 ---
 
@@ -174,7 +174,7 @@ pnpm build
 
 ## 🎨 Brand Identity
 
-- **Name**: MyPantry / Pantry Clip
+- **Name**: MyPantry Clip
 - **Design Philosophy**: Utility-focused, engineering-chic. Minimalist UI with NYT Cooking-inspired aesthetics.
 - **Typography**: `Fraunces` (headings) / `Quicksand` (body) / Monospace (data)
 - **Core Colors**:

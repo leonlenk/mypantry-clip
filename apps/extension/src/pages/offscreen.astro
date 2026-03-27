@@ -10,7 +10,7 @@
 <html>
     <head>
         <meta charset="UTF-8" />
-        <title>MyPantry Offscreen</title>
+        <title>MyPantry Clip Offscreen</title>
     </head>
     <body>
         <script>
@@ -43,7 +43,7 @@
                         if (adapter) return "webgpu";
                     }
                 } catch (_) {}
-                console.warn("[MyPantry Offscreen] WebGPU unavailable, falling back to WASM.");
+                console.warn("[MyPantry Clip Offscreen] WebGPU unavailable, falling back to WASM.");
                 return "wasm";
             }
 
@@ -80,7 +80,7 @@
                     (async () => {
                         try {
                             console.log(
-                                "[MyPantry Offscreen] Generating embedding for text length:",
+                                "[MyPantry Clip Offscreen] Generating embedding for text length:",
                                 text.length
                             );
                             const pipe = await getExtractor();
@@ -93,12 +93,12 @@
                                 output.data as Float32Array
                             );
                             console.log(
-                                `[MyPantry Offscreen] Done. Embedding dimension: ${embedding.length}`
+                                `[MyPantry Clip Offscreen] Done. Embedding dimension: ${embedding.length}`
                             );
                             sendResponse({ success: true, embedding });
                         } catch (error: any) {
                             console.error(
-                                "[MyPantry Offscreen] Embedding failed:",
+                                "[MyPantry Clip Offscreen] Embedding failed:",
                                 error
                             );
                             sendResponse({

@@ -467,14 +467,14 @@ class TestShareGetView:
         assert "Waffles" in resp.text
 
     def test_valid_id_contains_save_button(self, client):
-        """The HTML page includes the 'Save to MyPantry' button."""
+        """The HTML page includes the 'Save to MyPantry Clip' button."""
         mock_client, _, mock_result = _build_share_mock()
         mock_result.data = self._valid_row()
         with _share_patch(mock_client):
             resp = client.get("/s/abc12345")
         assert resp.status_code == 200
         assert "save-btn" in resp.text
-        assert "Save to MyPantry" in resp.text
+        assert "Save to MyPantry Clip" in resp.text
 
     def test_multi_recipe_returns_mini_pantry(self, client):
         """Multiple recipes in one share link render as a grid, not a single card."""

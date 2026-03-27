@@ -1,5 +1,5 @@
 /**
- * sync.ts — Cloud sync utilities for the MyPantry extension.
+ * sync.ts — Cloud sync utilities for the MyPantry Clip extension.
  *
  * Cloud sync is JSON-only backup/restore. Embeddings are computed client-side,
  * kept in IndexedDB, and are NEVER sent to or returned from the cloud —

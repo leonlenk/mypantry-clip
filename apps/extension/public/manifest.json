@@ -1,11 +1,11 @@
 {
     "manifest_version": 3,
     "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0xsNz/a9OkKerBPE8VpZs0amD0tTGNkKwUkoWCDDj0atOvefyHm8tiY8m6LDIQ5kw1bu7B+aetSlHlb2Xk+9YlKK5R3rD1fDDwb4L8GPSCe/A/y+Uj5nMjzYVy25xln08qTBvFEI6PDVjRWBmAXpAl9RYkS/Q6vvTeh/sHsU2pLX7I9nlVKStL2V2KW61lgyQzz3wuLqKjGx6RMrDn2mQU3/YVs2sAMKaWazPc8OVIVhGq5L6manxGdesYgMlAxVrenbuTKA508yoozP6jq3vbaEjCude/nrfonaVG6p/uni3X1H6PN91F7qy0t3WCyUToHkz4j8FKGxsfKQXUQYIQIDAQAB",
-    "name": "My Pantry",
-    "version": "0.2.2",
+    "name": "MyPantry Clip",
+    "version": "0.3.0",
     "description": "Browser extension for extracting, saving, and searching recipes.",
     "action": {
-        "default_title": "My Pantry",
+        "default_title": "MyPantry Clip",
         "default_popup": "popup.html",
         "default_icon": {
             "16": "icon-16.png",

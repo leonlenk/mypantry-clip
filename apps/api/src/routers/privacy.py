@@ -10,14 +10,14 @@ _PRIVACY_HTML = """<!DOCTYPE html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Privacy Policy – MyPantry</title>
+    <title>Privacy Policy – MyPantry Clip</title>
     <meta name="description" content="MyPantry is designed privacy-first. Your recipe data lives on your device by default. We never sell your data, run ads, or track your browsing.">
     <link rel="canonical" href="https://mypantry.dev/privacy">
     <meta name="theme-color" content="#4A4036">
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
     <link rel="icon" type="image/x-icon" sizes="32x32" href="/static/favicon.ico">
     <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
-    <meta property="og:title" content="Privacy Policy – MyPantry">
+    <meta property="og:title" content="Privacy Policy – MyPantry Clip">
     <meta property="og:description" content="MyPantry is designed privacy-first. Your recipe data lives on your device by default. We never sell your data, run ads, or track your browsing.">
     <meta property="og:url" content="https://mypantry.dev/privacy">
     <meta property="og:image" content="https://mypantry.dev/static/pantry_preview.png">
@@ -206,7 +206,7 @@ _PRIVACY_HTML = """<!DOCTYPE html>
                 <path d="M3 11l19-9-9 19-2-8-8-2z"/>
             </svg>
         </div>
-        <a href="https://mypantry.dev" class="brand">MyPantry</a>
+        <a href="https://mypantry.dev" class="brand">MyPantry Clip</a>
         <span class="pill">Legal</span>
     </header>
 
@@ -218,7 +218,7 @@ _PRIVACY_HTML = """<!DOCTYPE html>
 
     <!-- TL;DR -->
     <div class="intro-card">
-        <strong>Short version:</strong> MyPantry is designed privacy-first. Your recipe data lives on <em>your device</em>
+        <strong>Short version:</strong> MyPantry Clip is designed privacy-first. Your recipe data lives on <em>your device</em>
         by default. We never sell your data, run ads, or track your browsing. Cloud sync is opt-in and secured
         end-to-end by Supabase Auth. Your LLM API key is encrypted locally and is never transmitted to our servers.
     </div>
@@ -228,7 +228,7 @@ _PRIVACY_HTML = """<!DOCTYPE html>
         <h2>1. Who We Are</h2>
         <p>
             MyPantry ("<strong>we</strong>", "<strong>us</strong>", or "<strong>our</strong>") is the operator of the
-            MyPantry browser extension ("Pantry Clip") and the cloud synchronisation API hosted at
+            MyPantry browser extension ("MyPantry Clip") and the cloud synchronisation API hosted at
             <code>mypantry.dev</code>. For questions about this policy, contact us at
             <a href="mailto:support@mypantry.dev" style="color:var(--color-accent)">support@mypantry.dev</a>.
         </p>
@@ -239,7 +239,7 @@ _PRIVACY_HTML = """<!DOCTYPE html>
         <h2>2. What This Policy Covers</h2>
         <p>This policy applies to:</p>
         <ul>
-            <li>The <strong>Pantry Clip</strong> Chrome extension (the "Extension").</li>
+            <li>The <strong>MyPantry Clip</strong> Chrome extension (the "Extension").</li>
             <li>The <strong>MyPantry Cloud API</strong> at <code>https://mypantry.dev</code> (the "Service").</li>
             <li>Any authentication flows conducted via Supabase (Google OAuth / Email OTP).</li>
         </ul>
@@ -357,7 +357,7 @@ _PRIVACY_HTML = """<!DOCTYPE html>
     <!-- 7. Permissions -->
     <section id="permissions">
         <h2>7. Chrome Extension Permissions</h2>
-        <p>Pantry Clip requests the following Chrome permissions and uses them strictly as described:</p>
+        <p>MyPantry Clip requests the following Chrome permissions and uses them strictly as described:</p>
         <ul>
             <li><strong>activeTab:</strong> Read the current tab's URL and title when you click the extension icon. We read only the tab you explicitly activate.</li>
             <li><strong>scripting:</strong> Inject a content script into the active tab on demand to extract the page's DOM for recipe parsing. The content script runs only when you initiate an extraction.</li>

@@ -94,7 +94,7 @@ def _build_cors_origins() -> list[str]:
     return origins
 
 app = FastAPI(
-    title="MyPantry Cloud API",
+    title="MyPantry Clip Cloud API",
     docs_url="/api/docs",
     openapi_url="/api/openapi.json",
     lifespan=lifespan,
@@ -131,9 +131,9 @@ def auth_callback():
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Authorizing... | MyPantry</title>
+        <title>Authorizing... | MyPantry Clip</title>
         <meta name="robots" content="noindex, nofollow">
-        <meta name="description" content="Securely linking your MyPantry account.">
+        <meta name="description" content="Securely linking your MyPantry Clip account.">
         <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
         <style>
             body {

@@ -68,7 +68,7 @@ export async function executeExtractionInBackground(
                     throw new Error("Content script injection failed to initialize.");
                 }
             } catch (err: any) {
-                console.error("[MyPantry] Failed to inject content script:", err);
+                console.error("[MyPantry Clip] Failed to inject content script:", err);
                 throw new Error("Could not access page content. Please try reloading the tab. Error: " + err.message);
             }
         }
@@ -132,7 +132,7 @@ export async function executeExtractionInBackground(
         if (embeddingResult?.success && embeddingResult.embedding) {
             recipeData.embedding = embeddingResult.embedding;
         } else {
-            console.warn("[MyPantry] Embedding failed, saving without vector:", embeddingResult?.error);
+            console.warn("[MyPantry Clip] Embedding failed, saving without vector:", embeddingResult?.error);
             embeddingFailed = true;
         }
 

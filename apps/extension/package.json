@@ -1,7 +1,7 @@
 {
   "name": "mypantry",
   "type": "module",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "scripts": {
     "predev": "node scripts/download-model.mjs",
     "dev": "astro dev",
