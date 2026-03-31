@@ -9,28 +9,28 @@ _HOME_HTML = """<!DOCTYPE html>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MyPantry Clip – Save &amp; Search Recipes</title>
-    <meta name="description" content="MyPantry Clip is a privacy-first, secure Chrome extension that extracts perfectly formatted recipes from any website and lets you search your personal cookbook semantically.">
+    <meta name="description" content="MyPantry Clip is a privacy-first Chrome extension that clips recipes from any website in one click and lets you search your personal cookbook semantically.">
     <link rel="canonical" href="https://mypantry.dev/">
     <meta name="theme-color" content="#4A4036">
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
     <link rel="icon" type="image/x-icon" sizes="32x32" href="/static/favicon.ico">
     <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
     <meta property="og:title" content="MyPantry Clip">
-    <meta property="og:description" content="MyPantry Clip is a privacy-first, secure Chrome extension that extracts perfectly formatted recipes from any website and lets you search your personal cookbook semantically.">
+    <meta property="og:description" content="MyPantry Clip is a privacy-first Chrome extension that clips recipes from any website in one click and lets you search your personal cookbook semantically.">
     <meta property="og:url" content="https://mypantry.dev/">
     <meta property="og:image" content="https://mypantry.dev/static/pantry_preview.png">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="MyPantry">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="MyPantry Clip">
-    <meta name="twitter:description" content="MyPantry Clip is a privacy-first, secure Chrome extension that extracts perfectly formatted recipes from any website and lets you search your personal cookbook semantically.">
+    <meta name="twitter:description" content="MyPantry Clip is a privacy-first Chrome extension that clips recipes from any website in one click and lets you search your personal cookbook semantically.">
     <meta name="twitter:image" content="https://mypantry.dev/static/pantry_preview.png">
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "SoftwareApplication",
       "name": "MyPantry Clip",
-      "description": "A privacy-first Chrome extension that extracts perfectly formatted recipes from any website and lets you search your personal cookbook semantically.",
+      "description": "A privacy-first Chrome extension that clips recipes from any website in one click and lets you search your personal cookbook semantically.",
       "url": "https://mypantry.dev/",
       "applicationCategory": "UtilitiesApplication",
       "operatingSystem": "Chrome",
@@ -412,8 +412,8 @@ _HOME_HTML = """<!DOCTYPE html>
     <!-- Hero -->
     <main>
         <section class="hero">
-            <h1>Save recipes instantly. <br>Find them magically.</h1>
-            <p>MyPantry Clip is a privacy-first, secure Chrome extension that extracts perfectly formatted recipes from any website and lets you search your personal cookbook semantically.</p>
+            <h1>Save recipes efficiently. <br>Find them instantly.</h1>
+            <p>MyPantry Clip is a privacy-first Chrome extension that clips perfectly formatted recipes from any website in one click and lets you search your personal cookbook semantically.</p>
             
             <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem;">
                 <a href="https://chromewebstore.google.com/detail/my-pantry/hhaplljlbkgehhomjkjdnadbjpcahglo" target="_blank" rel="noopener" class="cta-button">
@@ -459,8 +459,8 @@ _HOME_HTML = """<!DOCTYPE html>
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
                     </div>
                     <h3>BYOK Privacy</h3>
-                    <p>Bring Your Own Key mode means your LLM API keys are AES-256-GCM encrypted locally in your browser. When decrypted, they are held securely in memory for only up to 1 hour to avoid repeated password prompts. We never see your raw key material.</p>
-                    <div class="feature-tag">window.crypto.subtle</div>
+                    <p>Bring Your Own Key mode lets you use your own LLM API keys directly in the browser. Keys are stored locally in browser storage and never sent to our servers — no account required.</p>
+                    <div class="feature-tag">chrome.storage.local</div>
                 </div>
 
                 <!-- Feature 2 -->
