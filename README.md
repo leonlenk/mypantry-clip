@@ -17,25 +17,7 @@
 ## 📸 Visual Showcase
 
 <div align="center">
-  <h3>The Main Dashboard</h3>
-  <img src="general_assets/pantry_preview.png" alt="MyPantry Main Dashboard" width="100%">
-  <br><br>
-  <table width="100%">
-    <tr>
-      <td align="center" width="33%">
-        <b>Extension Popup</b><br><br>
-        <img src="general_assets/extension_popup.png" alt="Extension Popup" width="260">
-      </td>
-      <td align="center" width="33%">
-        <b>Ingredient Substitutions</b><br><br>
-        <img src="general_assets/ask_for_substitutes.png" alt="AI Ingredient Substitutions" width="260">
-      </td>
-      <td align="center" width="33%">
-        <b>Mobile Ingredient View</b><br><br>
-        <img src="general_assets/mobile_ingredients.png" alt="Mobile Ingredients View" width="260">
-      </td>
-    </tr>
-  </table>
+  <img src="general_assets/demo_gif.gif" alt="MyPantry Clip Demo" width="100%">
 </div>
 
 ---
